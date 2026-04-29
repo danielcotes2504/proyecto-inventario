@@ -1,16 +1,14 @@
+# Credentials come from backend/.env (${DB_USER}, ${DB_PASSWORD}, ${DB_NAME}, ${DB_PORT}).
+# PostgreSQL only applies POSTGRES_PASSWORD on first volume creation. If you change
+# DB_PASSWORD later and get "password authentication failed", reset the volume:
+#   docker compose down -v && docker compose up -d
 services:
-  db:
+  postgres:
     image: postgres:15-alpine
-    container_name: inventory_db
-    restart: always
-    environment:
-      POSTGRES_USER: user
-      POSTGRES_PASSWORD: password
-      POSTGRES_DB: inventory_management
+    restart: unless-stopped
     ports:
-      - "5432:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-
-volumes:
-  postgres_data:
+      - '${DB_PORT:-5432}:5432'
+    environment:
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
+      POSTGRES_DB: ${DB_NAME:-inventory}

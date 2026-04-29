@@ -1,8 +1,30 @@
 import { NestFactory } from '@nestjs/core';
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+
 import { AppModule } from './app.module';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+
+  const swaggerConfig = new DocumentBuilder()
+    .setTitle('Inventario API')
+    .setDescription(
+      'REST API for inventory management (NestJS, TypeORM, PostgreSQL). Aligns with docs/architecture and PRD.',
+    )
+    .setVersion('1.0')
+    .addTag('app', 'Application root')
+    .addTag('products', 'Products — catalog & stock inputs')
+    .build();
+
+  const document = SwaggerModule.createDocument(app, swaggerConfig);
+  SwaggerModule.setup('docs', app, document, {
+    jsonDocumentUrl: 'docs/json',
+    swaggerOptions: {
+      persistAuthorization: true,
+      docExpansion: 'list',
+    },
+  });
+
   await app.listen(process.env.PORT ?? 3000);
 }
 bootstrap();
