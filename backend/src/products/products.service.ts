@@ -5,6 +5,7 @@ import type { DataSource, Repository } from 'typeorm';
 import { Product } from '../database/entities/product.entity';
 import type { InventoryAlertItem } from '../inventory/types/inventory-alert.item';
 import type { CreateProductBody } from './schemas/create-product.schema';
+import type { UpdateProductBody } from './schemas/update-product.schema';
 import {
   createProductService,
   type ProductServiceFactoryReturn,
@@ -33,6 +34,14 @@ export class ProductsService {
 
   findAll(): Promise<ProductWithStockActual[]> {
     return this.productApi.findAllWithStock();
+  }
+
+  findOne(id: string): Promise<ProductWithStockActual> {
+    return this.productApi.findOneWithStock(id);
+  }
+
+  update(id: string, body: UpdateProductBody): Promise<ProductWithStockActual> {
+    return this.productApi.patchProduct(id, body);
   }
 
   findInventoryAlerts(): Promise<InventoryAlertItem[]> {

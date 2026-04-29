@@ -9,6 +9,7 @@ import { Movement } from '../../../database/entities/movement.entity';
 import { Product } from '../../../database/entities/product.entity';
 import type { InventoryAlertItem } from '../../../inventory/types/inventory-alert.item';
 import type { CreateProductBody } from '../../schemas/create-product.schema';
+import type { UpdateProductBody } from '../../schemas/update-product.schema';
 
 export type ProductServiceDeps = {
   productRepository: Repository<Product>;
@@ -28,7 +29,7 @@ function parseAggregateNumber(
 }
 
 export function createProductService(deps: ProductServiceDeps) {
-  return {
+  const service = {
     async createProduct(payload: CreateProductBody): Promise<Product> {
       const entity = deps.productRepository.create({
         name: payload.name,
@@ -72,6 +73,59 @@ export function createProductService(deps: ProductServiceDeps) {
           ),
         };
       });
+    },
+
+    /**
+     * T-008 — Single product with `stock_actual` (same aggregation as T-004), one query.
+     */
+    async findOneWithStock(productId: string): Promise<ProductWithStockActual> {
+      const balanceSubQuery = buildMovementStockBalanceSubQuerySql(
+        deps.dataSource,
+      );
+
+      const { entities, raw } = await deps.productRepository
+        .createQueryBuilder('product')
+        .leftJoin(
+          `(${balanceSubQuery})`,
+          'stock_agg',
+          'stock_agg.product_id = product.id',
+        )
+        .addSelect('COALESCE(stock_agg.balance, 0)', 'stock_actual')
+        .where('product.id = :id', { id: productId })
+        .setParameters(STOCK_MOVEMENT_QUERY_PARAMS)
+        .getRawAndEntities();
+
+      const product = entities[0];
+      if (!product) {
+        throw new NotFoundException(`Product with id "${productId}" not found`);
+      }
+
+      const row = raw[0] as Record<string, unknown> | undefined;
+      const stockRaw = row?.stock_actual;
+      return {
+        ...product,
+        stock_actual: parseAggregateNumber(
+          stockRaw as string | number | null | undefined,
+        ),
+      };
+    },
+
+    /**
+     * T-009 — Partial update; response includes `stock_actual` (same as T-008).
+     */
+    async patchProduct(
+      productId: string,
+      payload: UpdateProductBody,
+    ): Promise<ProductWithStockActual> {
+      const product = await deps.productRepository.findOne({
+        where: { id: productId },
+      });
+      if (!product) {
+        throw new NotFoundException(`Product with id "${productId}" not found`);
+      }
+      Object.assign(product, payload);
+      await deps.productRepository.save(product);
+      return service.findOneWithStock(productId);
     },
 
     /**
@@ -139,6 +193,7 @@ export function createProductService(deps: ProductServiceDeps) {
       });
     },
   };
+  return service;
 }
 
 export type ProductServiceFactoryReturn = ReturnType<

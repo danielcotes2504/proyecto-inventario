@@ -6,7 +6,7 @@ import {
 } from '../../database/domain/inventory-domain';
 
 /**
- * OpenAPI shape for `GET /products` — persisted fields plus aggregated `stock_actual`.
+ * OpenAPI shape for `GET /products`, `GET /products/:id`, and `PATCH /products/:id` response — persisted fields plus aggregated `stock_actual`.
  */
 export class ProductListItemDto {
   @ApiProperty({

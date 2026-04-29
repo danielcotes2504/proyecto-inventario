@@ -4,6 +4,7 @@ import { getDataSourceToken, getRepositoryToken } from '@nestjs/typeorm';
 
 import { Product } from '../database/entities/product.entity';
 import { createProductBodySchema } from './schemas/create-product.schema';
+import { updateProductBodySchema } from './schemas/update-product.schema';
 import { ProductsService } from './products.service';
 
 describe('ProductsService', () => {
@@ -42,6 +43,7 @@ describe('ProductsService', () => {
         updatedAt: new Date('2026-01-01'),
       }),
     ),
+    findOne: jest.fn(),
     createQueryBuilder: jest.fn(() => mockProductListQb),
   };
 
@@ -152,6 +154,94 @@ describe('ProductsService', () => {
     });
   });
 
+  describe('findOne (T-008)', () => {
+    const id = '550e8400-e29b-41d4-a716-446655440011';
+
+    it('returns product with stock_actual from single aggregated query', async () => {
+      const entity = {
+        id,
+        name: 'One',
+        description: '',
+        unit: 'KG',
+        category: '',
+        stock_minimo: 2,
+        status: 'ACTIVO',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      } as Product;
+
+      mockProductListQb.getRawAndEntities.mockResolvedValue({
+        entities: [entity],
+        raw: [{ stock_actual: '8' }],
+      });
+
+      const row = await service.findOne(id);
+
+      expect(mockProductListQb.where).toHaveBeenCalledWith('product.id = :id', {
+        id,
+      });
+      expect(row.stock_actual).toBe(8);
+      expect(row.id).toBe(id);
+      expect(row.name).toBe('One');
+    });
+
+    it('throws NotFoundException when product does not exist', async () => {
+      mockProductListQb.getRawAndEntities.mockResolvedValue({
+        entities: [],
+        raw: [],
+      });
+
+      await expect(service.findOne(id)).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  describe('update / patch (T-009)', () => {
+    const id = '550e8400-e29b-41d4-a716-446655440077';
+
+    const baseProduct = {
+      id,
+      name: 'Old',
+      description: 'd',
+      unit: 'KG',
+      category: 'c',
+      stock_minimo: 5,
+      status: 'ACTIVO',
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    } as Product;
+
+    beforeEach(() => {
+      mockRepo.findOne.mockResolvedValue({ ...baseProduct });
+      mockRepo.save.mockImplementation((p: Product) => Promise.resolve(p));
+    });
+
+    it('applies partial fields and returns product with stock_actual', async () => {
+      mockProductListQb.getRawAndEntities.mockResolvedValue({
+        entities: [{ ...baseProduct, name: 'New' }],
+        raw: [{ stock_actual: '3' }],
+      });
+
+      const result = await service.update(id, { name: 'New' });
+
+      expect(mockRepo.findOne).toHaveBeenCalledWith({ where: { id } });
+      expect(mockRepo.save).toHaveBeenCalled();
+      const savedArg = mockRepo.save.mock.calls[0][0];
+      expect(savedArg.name).toBe('New');
+      expect(savedArg.unit).toBe('KG');
+      expect(result.stock_actual).toBe(3);
+      expect(result.name).toBe('New');
+    });
+
+    it('throws NotFoundException when product does not exist', async () => {
+      mockRepo.findOne.mockResolvedValue(null);
+
+      await expect(service.update(id, { name: 'X' })).rejects.toThrow(
+        NotFoundException,
+      );
+      expect(mockRepo.save).not.toHaveBeenCalled();
+    });
+  });
+
   describe('findInventoryAlerts (T-005)', () => {
     it('returns slim rows with db-side M8 filter applied', async () => {
       const alertProduct = {
@@ -258,6 +348,26 @@ describe('createProductBodySchema', () => {
     if (result.success) {
       expect(result.data.unit).toBe('KG');
       expect(result.data.status).toBe('ACTIVO');
+    }
+  });
+});
+
+describe('updateProductBodySchema', () => {
+  it('rejects empty object', () => {
+    expect(updateProductBodySchema.safeParse({}).success).toBe(false);
+  });
+
+  it('rejects unknown keys (strict)', () => {
+    expect(updateProductBodySchema.safeParse({ unknown: true }).success).toBe(
+      false,
+    );
+  });
+
+  it('accepts a single valid field', () => {
+    const result = updateProductBodySchema.safeParse({ stock_minimo: 10 });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.stock_minimo).toBe(10);
     }
   });
 });

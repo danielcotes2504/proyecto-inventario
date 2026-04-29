@@ -172,3 +172,10 @@ Create a specific endpoint `GET /inventory/alerts/low-stock` that returns ONLY p
   - @ApiResponse 200: "List of products in alert status"
 
 **Please provide the implementation for the new endpoint in the Service and Controller.**
+
+----------------- Implementation of ticket T-008 ------------
+Implement T-008 /nestjs-best-practices @tickets.md (78-91) 
+
+----------------- Implementation of ticket T-009 ------------
+Implement T-009:
+@tickets.md (93-102) /nestjs-best-practices 

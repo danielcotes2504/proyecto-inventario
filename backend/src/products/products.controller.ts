@@ -7,6 +7,7 @@ import {
   HttpStatus,
   Param,
   ParseUUIDPipe,
+  Patch,
   Post,
 } from '@nestjs/common';
 import {
@@ -25,10 +26,15 @@ import { ZodValidationPipe } from '../common/pipes/zod-validation.pipe';
 import { Product } from '../database/entities/product.entity';
 import { CreateProductApiDto } from './dto/create-product-api.dto';
 import { ProductListItemDto } from './dto/product-list-item.dto';
+import { UpdateProductApiDto } from './dto/update-product-api.dto';
 import {
   createProductBodySchema,
   type CreateProductBody,
 } from './schemas/create-product.schema';
+import {
+  updateProductBodySchema,
+  type UpdateProductBody,
+} from './schemas/update-product.schema';
 import { ProductsService } from './products.service';
 
 @ApiTags('products')
@@ -49,6 +55,39 @@ export class ProductsController {
   })
   findAll(): Promise<ProductListItemDto[]> {
     return this.productsService.findAll();
+  }
+
+  @Get(':id')
+  @ApiOperation({
+    summary: 'Get product by id with calculated stock',
+    description:
+      'T-008 — Same `stock_actual` definition as `GET /products` (sum IN − sum OUT), single aggregated query.',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'Product UUID',
+    format: 'uuid',
+    example: '550e8400-e29b-41d4-a716-446655440000',
+  })
+  @ApiOkResponse({
+    description: 'Product with stock_actual',
+    type: ProductListItemDto,
+  })
+  @ApiNotFoundResponse({
+    description: 'Product not found',
+    schema: {
+      type: 'object',
+      properties: {
+        statusCode: { type: 'number', example: 404 },
+        message: { type: 'string' },
+        error: { type: 'string', example: 'Not Found' },
+      },
+    },
+  })
+  findOne(
+    @Param('id', new ParseUUIDPipe({ version: '4' })) id: string,
+  ): Promise<ProductListItemDto> {
+    return this.productsService.findOne(id);
   }
 
   @Post()
@@ -81,6 +120,58 @@ export class ProductsController {
     body: CreateProductBody,
   ): Promise<Product> {
     return this.productsService.create(body);
+  }
+
+  @Patch(':id')
+  @ApiOperation({
+    summary: 'Partially update a product',
+    description:
+      'T-009 — Only sent fields are updated; response includes `stock_actual` (same as GET detail).',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'Product UUID',
+    format: 'uuid',
+    example: '550e8400-e29b-41d4-a716-446655440000',
+  })
+  @ApiBody({ type: UpdateProductApiDto })
+  @ApiOkResponse({
+    description: 'Updated product with stock_actual',
+    type: ProductListItemDto,
+  })
+  @ApiBadRequestResponse({
+    description: 'Validation failed (Zod) or empty body',
+    schema: {
+      type: 'object',
+      properties: {
+        message: { type: 'string', example: 'Validation failed' },
+        errors: {
+          type: 'object',
+          additionalProperties: {
+            type: 'array',
+            items: { type: 'string' },
+          },
+        },
+      },
+    },
+  })
+  @ApiNotFoundResponse({
+    description: 'Product not found',
+    schema: {
+      type: 'object',
+      properties: {
+        statusCode: { type: 'number', example: 404 },
+        message: { type: 'string' },
+        error: { type: 'string', example: 'Not Found' },
+      },
+    },
+  })
+  update(
+    @Param('id', new ParseUUIDPipe({ version: '4' })) id: string,
+    @Body(new ZodValidationPipe(updateProductBodySchema))
+    body: UpdateProductBody,
+  ): Promise<ProductListItemDto> {
+    return this.productsService.update(id, body);
   }
 
   @Delete(':id')
