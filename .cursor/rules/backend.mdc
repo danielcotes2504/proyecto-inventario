@@ -1,0 +1,9 @@
+---
+description: Backend conventions for proyecto-inventario (NestJS).
+globs:
+  - backend/**/*
+---
+
+- Follow **`.cursor/skills/backend/nestjs-best-practices/`** (`SKILL.md` + `rules/*.md`) for NestJS architecture and rule detail.
+- Prefer feature modules, constructor injection, validated DTOs, and explicit exception handling.
+- Use skills under **`.cursor/skills/backend/`** (e.g. nestjs-best-practices, TypeORM skill) when implementing or reviewing Nest code.

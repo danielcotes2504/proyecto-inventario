@@ -127,4 +127,4 @@ Each rule file contains:
 
 ## Full Compiled Document
 
-For the complete guide with all rules expanded: `AGENTS.md`
+For the complete guide with all rules expanded, read every file under this skill’s **`rules/`** directory (or generate a single markdown doc via **`.cursor/scripts/`** when that workflow is set up).
