@@ -36,7 +36,10 @@ export class ProductsController {
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
-  @ApiOperation({ summary: 'Create product', description: 'T-001 — persist product with validated payload.' })
+  @ApiOperation({
+    summary: 'Create product',
+    description: 'T-001 — persist product with validated payload.',
+  })
   @ApiBody({ type: CreateProductApiDto })
   @ApiCreatedResponse({ description: 'Created', type: Product })
   @ApiBadRequestResponse({

@@ -6,6 +6,7 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { Movement } from './database/entities/movement.entity';
 import { Product } from './database/entities/product.entity';
+import { MovementsModule } from './movements/movements.module';
 import { ProductsModule } from './products/products.module';
 
 @Module({
@@ -27,6 +28,7 @@ import { ProductsModule } from './products/products.module';
       }),
     }),
     ProductsModule,
+    MovementsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

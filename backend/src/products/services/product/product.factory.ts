@@ -57,4 +57,6 @@ export function createProductService(deps: ProductServiceDeps) {
   };
 }
 
-export type ProductServiceFactoryReturn = ReturnType<typeof createProductService>;
+export type ProductServiceFactoryReturn = ReturnType<
+  typeof createProductService
+>;

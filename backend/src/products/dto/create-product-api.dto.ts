@@ -1,6 +1,9 @@
 import { ApiProperty } from '@nestjs/swagger';
 
-import { PRODUCT_STATUS, PRODUCT_UNIT } from '../../database/domain/inventory-domain';
+import {
+  PRODUCT_STATUS,
+  PRODUCT_UNIT,
+} from '../../database/domain/inventory-domain';
 
 /**
  * OpenAPI-only shape for `POST /products`. Runtime validation remains Zod (`create-product.schema`).
@@ -22,7 +25,11 @@ export class CreateProductApiDto {
   @ApiProperty({ example: 'Abarrotes', maxLength: 255 })
   category: string;
 
-  @ApiProperty({ example: 10, minimum: 0, description: 'Minimum stock threshold (M8)' })
+  @ApiProperty({
+    example: 10,
+    minimum: 0,
+    description: 'Minimum stock threshold (M8)',
+  })
   stock_minimo: number;
 
   @ApiProperty({

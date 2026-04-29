@@ -9,7 +9,10 @@ export class AppController {
   constructor(private readonly appService: AppService) {}
 
   @Get()
-  @ApiOperation({ summary: 'Health / hello', description: 'Root ping endpoint.' })
+  @ApiOperation({
+    summary: 'Health / hello',
+    description: 'Root ping endpoint.',
+  })
   getHello(): string {
     return this.appService.getHello();
   }

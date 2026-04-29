@@ -14,6 +14,7 @@ async function bootstrap() {
     .setVersion('1.0')
     .addTag('app', 'Application root')
     .addTag('products', 'Products — catalog & stock inputs')
+    .addTag('movements', 'Stock movements — IN/OUT (T-003)')
     .build();
 
   const document = SwaggerModule.createDocument(app, swaggerConfig);
@@ -27,4 +28,4 @@ async function bootstrap() {
 
   await app.listen(process.env.PORT ?? 3000);
 }
-bootstrap();
+void bootstrap();

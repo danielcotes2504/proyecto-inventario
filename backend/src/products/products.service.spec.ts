@@ -11,12 +11,14 @@ describe('ProductsService', () => {
 
   const mockRepo = {
     create: jest.fn((data: Partial<Product>) => data),
-    save: jest.fn(async (entity: Product) => ({
-      ...entity,
-      id: '550e8400-e29b-41d4-a716-446655440000',
-      createdAt: new Date('2026-01-01'),
-      updatedAt: new Date('2026-01-01'),
-    })),
+    save: jest.fn((entity: Product) =>
+      Promise.resolve({
+        ...entity,
+        id: '550e8400-e29b-41d4-a716-446655440000',
+        createdAt: new Date('2026-01-01'),
+        updatedAt: new Date('2026-01-01'),
+      }),
+    ),
   };
 
   const mockManager = {
@@ -85,7 +87,7 @@ describe('ProductsService', () => {
       mockManager.findOne.mockResolvedValue({
         id,
         name: 'P',
-      } as Product);
+      });
       mockManager.count.mockResolvedValue(0);
       mockManager.delete.mockResolvedValue({ affected: 1, raw: [] });
 
@@ -106,7 +108,7 @@ describe('ProductsService', () => {
     });
 
     it('throws ConflictException when movements exist', async () => {
-      mockManager.findOne.mockResolvedValue({ id } as Product);
+      mockManager.findOne.mockResolvedValue({ id });
       mockManager.count.mockResolvedValue(2);
 
       try {

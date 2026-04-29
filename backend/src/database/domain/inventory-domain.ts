@@ -13,7 +13,8 @@ export const PRODUCT_STATUS = {
   INACTIVO: 'INACTIVO',
 } as const;
 
-export type ProductStatus = (typeof PRODUCT_STATUS)[keyof typeof PRODUCT_STATUS];
+export type ProductStatus =
+  (typeof PRODUCT_STATUS)[keyof typeof PRODUCT_STATUS];
 
 export const MOVEMENT_TYPE = {
   IN: 'IN',
