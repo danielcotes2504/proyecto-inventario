@@ -45,3 +45,17 @@ He revisado el PRD inicial y es necesario integrar las siguientes precisiones t�
    - Frontend: React con Axios.
 
    - Testing: Jest (Unitarios), fast-check (PBT), Stryker (Mutation) y Playwright (E2E).
+
+   --------------------- Corrección al ver que faltaban endpoints -----------
+   Analiza el @docs/user-stories.md  y el @docs/tickets.md , me es necesario añadir estos endpoints: 
+
+GET /products/:id
+PATCH /products/:id
+
+GET /movements
+GET /movements/:id
+
+GET /inventory
+GET /inventory/:productId
+
+Renombrar GET /inventory/alerts a /inventory/alerts/low-stock, si es necesario crea nuevos tickets de backend en @docs/tickets.md  siguiendo el formato
