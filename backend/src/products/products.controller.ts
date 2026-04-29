@@ -1,9 +1,22 @@
-import { Body, Controller, HttpCode, HttpStatus, Post } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  HttpCode,
+  HttpStatus,
+  Param,
+  ParseUUIDPipe,
+  Post,
+} from '@nestjs/common';
 import {
   ApiBadRequestResponse,
   ApiBody,
+  ApiConflictResponse,
   ApiCreatedResponse,
+  ApiNotFoundResponse,
+  ApiOkResponse,
   ApiOperation,
+  ApiParam,
   ApiTags,
 } from '@nestjs/swagger';
 
@@ -48,5 +61,62 @@ export class ProductsController {
     body: CreateProductBody,
   ): Promise<Product> {
     return this.productsService.create(body);
+  }
+
+  @Delete(':id')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Delete a product only if it has no movements',
+    description:
+      'T-002 — Rejects with 409 when any movement references this product.',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'Product UUID',
+    format: 'uuid',
+    example: '550e8400-e29b-41d4-a716-446655440000',
+  })
+  @ApiOkResponse({
+    description: 'Product deleted successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        message: {
+          type: 'string',
+          example: 'Product deleted successfully',
+        },
+      },
+    },
+  })
+  @ApiNotFoundResponse({
+    description: 'Product not found',
+    schema: {
+      type: 'object',
+      properties: {
+        statusCode: { type: 'number', example: 404 },
+        message: { type: 'string' },
+        error: { type: 'string', example: 'Not Found' },
+      },
+    },
+  })
+  @ApiConflictResponse({
+    description: 'Conflict: Product has associated movements',
+    schema: {
+      type: 'object',
+      properties: {
+        statusCode: { type: 'number', example: 409 },
+        message: {
+          type: 'string',
+          example: 'Cannot delete product: associated movements found.',
+        },
+        error: { type: 'string', example: 'Conflict' },
+      },
+    },
+  })
+  async remove(
+    @Param('id', new ParseUUIDPipe({ version: '4' })) id: string,
+  ): Promise<{ message: string }> {
+    await this.productsService.delete(id);
+    return { message: 'Product deleted successfully' };
   }
 }

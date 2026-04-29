@@ -1,5 +1,6 @@
+import { ConflictException, NotFoundException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
-import { getRepositoryToken } from '@nestjs/typeorm';
+import { getDataSourceToken, getRepositoryToken } from '@nestjs/typeorm';
 
 import { Product } from '../database/entities/product.entity';
 import { createProductBodySchema } from './schemas/create-product.schema';
@@ -18,6 +19,20 @@ describe('ProductsService', () => {
     })),
   };
 
+  const mockManager = {
+    findOne: jest.fn(),
+    count: jest.fn(),
+    delete: jest.fn(),
+  };
+
+  const mockDataSource = {
+    transaction: jest.fn(
+      async (cb: (manager: typeof mockManager) => Promise<void>) => {
+        await cb(mockManager);
+      },
+    ),
+  };
+
   beforeEach(async () => {
     jest.clearAllMocks();
 
@@ -27,6 +42,10 @@ describe('ProductsService', () => {
         {
           provide: getRepositoryToken(Product),
           useValue: mockRepo,
+        },
+        {
+          provide: getDataSourceToken(),
+          useValue: mockDataSource,
         },
       ],
     }).compile();
@@ -57,6 +76,50 @@ describe('ProductsService', () => {
     expect(mockRepo.save).toHaveBeenCalled();
     expect(product.id).toBeDefined();
     expect(product.name).toBe(dto.name);
+  });
+
+  describe('delete (T-002)', () => {
+    const id = '550e8400-e29b-41d4-a716-446655440000';
+
+    it('deletes when product exists and has no movements', async () => {
+      mockManager.findOne.mockResolvedValue({
+        id,
+        name: 'P',
+      } as Product);
+      mockManager.count.mockResolvedValue(0);
+      mockManager.delete.mockResolvedValue({ affected: 1, raw: [] });
+
+      await service.delete(id);
+
+      expect(mockDataSource.transaction).toHaveBeenCalled();
+      expect(mockManager.findOne).toHaveBeenCalled();
+      expect(mockManager.count).toHaveBeenCalled();
+      expect(mockManager.delete).toHaveBeenCalled();
+    });
+
+    it('throws NotFoundException when product does not exist', async () => {
+      mockManager.findOne.mockResolvedValue(null);
+
+      await expect(service.delete(id)).rejects.toThrow(NotFoundException);
+      expect(mockManager.count).not.toHaveBeenCalled();
+      expect(mockManager.delete).not.toHaveBeenCalled();
+    });
+
+    it('throws ConflictException when movements exist', async () => {
+      mockManager.findOne.mockResolvedValue({ id } as Product);
+      mockManager.count.mockResolvedValue(2);
+
+      try {
+        await service.delete(id);
+        fail('expected ConflictException');
+      } catch (err) {
+        expect(err).toBeInstanceOf(ConflictException);
+        expect((err as ConflictException).message).toBe(
+          'Cannot delete product: associated movements found.',
+        );
+      }
+      expect(mockManager.delete).not.toHaveBeenCalled();
+    });
   });
 });
 

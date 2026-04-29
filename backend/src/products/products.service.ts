@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import type { Repository } from 'typeorm';
+import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
+import type { DataSource, Repository } from 'typeorm';
 
 import { Product } from '../database/entities/product.entity';
 import type { CreateProductBody } from './schemas/create-product.schema';
@@ -16,13 +16,20 @@ export class ProductsService {
   constructor(
     @InjectRepository(Product)
     private readonly productRepository: Repository<Product>,
+    @InjectDataSource()
+    private readonly dataSource: DataSource,
   ) {
     this.productApi = createProductService({
       productRepository: this.productRepository,
+      dataSource: this.dataSource,
     });
   }
 
   create(body: CreateProductBody): Promise<Product> {
     return this.productApi.createProduct(body);
+  }
+
+  delete(productId: string): Promise<void> {
+    return this.productApi.deleteProduct(productId);
   }
 }
