@@ -3,6 +3,7 @@ import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
 import type { DataSource, Repository } from 'typeorm';
 
 import { Product } from '../database/entities/product.entity';
+import type { InventoryAlertItem } from '../inventory/types/inventory-alert.item';
 import type { CreateProductBody } from './schemas/create-product.schema';
 import {
   createProductService,
@@ -32,6 +33,10 @@ export class ProductsService {
 
   findAll(): Promise<ProductWithStockActual[]> {
     return this.productApi.findAllWithStock();
+  }
+
+  findInventoryAlerts(): Promise<InventoryAlertItem[]> {
+    return this.productApi.findAlertsWithStock();
   }
 
   delete(productId: string): Promise<void> {

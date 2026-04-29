@@ -15,6 +15,7 @@ async function bootstrap() {
     .addTag('app', 'Application root')
     .addTag('products', 'Products — catalog & stock inputs')
     .addTag('movements', 'Stock movements — IN/OUT (T-003)')
+    .addTag('inventory', 'Inventory alerts — M8 / minimum stock (T-005)')
     .build();
 
   const document = SwaggerModule.createDocument(app, swaggerConfig);

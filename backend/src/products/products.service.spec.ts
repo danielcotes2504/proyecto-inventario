@@ -20,6 +20,7 @@ describe('ProductsService', () => {
   const mockProductListQb = {
     leftJoin: jest.fn().mockReturnThis(),
     addSelect: jest.fn().mockReturnThis(),
+    where: jest.fn().mockReturnThis(),
     orderBy: jest.fn().mockReturnThis(),
     setParameters: jest.fn().mockReturnThis(),
     getRawAndEntities: jest.fn(),
@@ -148,6 +149,41 @@ describe('ProductsService', () => {
 
       const rows = await service.findAll();
       expect(rows[0].stock_actual).toBe(0);
+    });
+  });
+
+  describe('findInventoryAlerts (T-005)', () => {
+    it('returns slim rows with db-side M8 filter applied', async () => {
+      const alertProduct = {
+        id: '550e8400-e29b-41d4-a716-446655440099',
+        name: 'Low stock',
+        description: 'd',
+        unit: 'KG',
+        category: 'c',
+        stock_minimo: 10,
+        status: 'ACTIVO',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      } as Product;
+
+      mockProductListQb.getRawAndEntities.mockResolvedValue({
+        entities: [alertProduct],
+        raw: [{ stock_actual: '5' }],
+      });
+
+      const rows = await service.findInventoryAlerts();
+
+      expect(mockProductListQb.where).toHaveBeenCalledWith(
+        'COALESCE(stock_agg.balance, 0) <= product.stock_minimo',
+      );
+      expect(rows).toEqual([
+        {
+          id: alertProduct.id,
+          name: 'Low stock',
+          stock_actual: 5,
+          stock_minimo: 10,
+        },
+      ]);
     });
   });
 

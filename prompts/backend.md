@@ -146,3 +146,29 @@ Update the `GET /products` endpoint so that each product in the collection inclu
 - Ensure the logic remains consistent with the existing `Product` entity and `Movement` relationship.
 
 **Please provide the updated code for the Service, the response DTO, and the Controller.**
+-------------------------- Task implementation of Ticket 5 -------------------
+# Role: Senior Backend Engineer
+# Task: Implementation of Ticket T-005 (M8 Rule - Inventory Alerts Endpoint) @docs/tickets.md 
+/nestjs-best-practices 
+Please implement the dedicated alerts endpoint following the business logic defined in the PRD and Ticket T-005.
+
+## 1. Objective
+Create a specific endpoint `GET /inventory/alerts` that returns ONLY products where the current stock is at or below the minimum threshold.
+
+## 2. Business Logic (M8 Rule)
+- **Filtering Criterion**: A product must be included if and only if `stock_actual <= stock_minimo`.
+- **Inclusivity**: Ensure the logic is inclusive (<=). If stock is exactly equal to the minimum, it IS an alert.
+- **Consistency**: Use the same calculation logic for `stock_actual` as implemented in T-004 (SUM of IN - SUM of OUT).
+
+## 3. Technical Requirements
+- **Endpoint**: GET /inventory/alerts
+- **Efficiency**: Filter the results at the database level (using HAVING or a subquery) rather than fetching all products and filtering in memory with JavaScript.
+- **Response Payload**: Must include at least: id, name, stock_actual, and stock_minimo.
+- **Code Reuse**: If possible, reuse the query logic/helper from T-004 to maintain a single source of truth for stock calculation.
+
+## 4. Documentation (Swagger)
+- Update the controller with Swagger decorators:
+  - @ApiOperation: "Get products that have reached or dropped below their minimum stock (M8 Rule)"
+  - @ApiResponse 200: "List of products in alert status"
+
+**Please provide the implementation for the new endpoint in the Service and Controller.**

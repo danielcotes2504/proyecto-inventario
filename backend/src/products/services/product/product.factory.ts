@@ -1,9 +1,13 @@
 import { ConflictException, NotFoundException } from '@nestjs/common';
 import type { DataSource, Repository } from 'typeorm';
 
-import { MOVEMENT_TYPE } from '../../../database/domain/inventory-domain';
+import {
+  buildMovementStockBalanceSubQuerySql,
+  STOCK_MOVEMENT_QUERY_PARAMS,
+} from '../../../database/queries/movement-stock-balance.subquery';
 import { Movement } from '../../../database/entities/movement.entity';
 import { Product } from '../../../database/entities/product.entity';
+import type { InventoryAlertItem } from '../../../inventory/types/inventory-alert.item';
 import type { CreateProductBody } from '../../schemas/create-product.schema';
 
 export type ProductServiceDeps = {
@@ -42,17 +46,9 @@ export function createProductService(deps: ProductServiceDeps) {
      * (LEFT JOIN to grouped subquery; avoids N+1).
      */
     async findAllWithStock(): Promise<ProductWithStockActual[]> {
-      const balanceSubQuery = deps.dataSource
-        .createQueryBuilder()
-        .subQuery()
-        .select('m.product_id', 'product_id')
-        .addSelect(
-          `COALESCE(SUM(CASE WHEN m.type = :inType THEN m.quantity ELSE 0 END), 0) - COALESCE(SUM(CASE WHEN m.type = :outType THEN m.quantity ELSE 0 END), 0)`,
-          'balance',
-        )
-        .from(Movement, 'm')
-        .groupBy('m.product_id')
-        .getQuery();
+      const balanceSubQuery = buildMovementStockBalanceSubQuerySql(
+        deps.dataSource,
+      );
 
       const { entities, raw } = await deps.productRepository
         .createQueryBuilder('product')
@@ -63,10 +59,7 @@ export function createProductService(deps: ProductServiceDeps) {
         )
         .addSelect('COALESCE(stock_agg.balance, 0)', 'stock_actual')
         .orderBy('product.name', 'ASC')
-        .setParameters({
-          inType: MOVEMENT_TYPE.IN,
-          outType: MOVEMENT_TYPE.OUT,
-        })
+        .setParameters(STOCK_MOVEMENT_QUERY_PARAMS)
         .getRawAndEntities();
 
       return entities.map((product, index) => {
@@ -77,6 +70,40 @@ export function createProductService(deps: ProductServiceDeps) {
           stock_actual: parseAggregateNumber(
             stockRaw as string | number | null | undefined,
           ),
+        };
+      });
+    },
+
+    /**
+     * T-005 — M8 inclusive: only products where computed stock_actual ≤ stock_minimo (DB filter).
+     */
+    async findAlertsWithStock(): Promise<InventoryAlertItem[]> {
+      const balanceSubQuery = buildMovementStockBalanceSubQuerySql(
+        deps.dataSource,
+      );
+
+      const { entities, raw } = await deps.productRepository
+        .createQueryBuilder('product')
+        .leftJoin(
+          `(${balanceSubQuery})`,
+          'stock_agg',
+          'stock_agg.product_id = product.id',
+        )
+        .addSelect('COALESCE(stock_agg.balance, 0)', 'stock_actual')
+        .where('COALESCE(stock_agg.balance, 0) <= product.stock_minimo')
+        .orderBy('product.name', 'ASC')
+        .setParameters(STOCK_MOVEMENT_QUERY_PARAMS)
+        .getRawAndEntities();
+
+      return entities.map((product, index) => {
+        const row = raw[index] as Record<string, unknown> | undefined;
+        return {
+          id: product.id,
+          name: product.name,
+          stock_actual: parseAggregateNumber(
+            row?.stock_actual as string | number | null | undefined,
+          ),
+          stock_minimo: product.stock_minimo,
         };
       });
     },
