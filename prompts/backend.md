@@ -117,3 +117,32 @@ Implement the `POST /movements` endpoint with strict stock validation for outgoi
 
 **Please provide the implementation for the Movement service, controller, and any updates to the DTOs.**
 context files: @docs/user-stories.md @.cursor/rules/backend.mdc 
+
+----------------------------- Implementation of Ticket 4 ------------------
+# Role: Senior Backend Engineer
+/nestjs-best-practices 
+# Task: Implementation of Ticket T-004 (Calculated stock_actual in Product List) @docs/tickets.md 
+
+Please implement the logic to include the real-time calculated stock in the product listing, following the requirements of T-004.
+
+## 1. Objective
+Update the `GET /products` endpoint so that each product in the collection includes a `stock_actual` field, calculated from its movement history.
+
+## 2. Technical Requirements & Logic
+- **Calculation**: stock_actual = (SUM of 'IN' movements) - (SUM of 'OUT' movements).
+- **Zero Case**: If a product has no movements, `stock_actual` must return 0.
+- **Optimization (Anti N+1)**: 
+  - Do NOT fetch movements separately for each product in a loop.
+  - Use a TypeORM QueryBuilder with a subquery, a Left Join with grouping, or a dedicated View/Raw SQL to calculate the balance efficiently in a single query.
+- **DTO Update**: Ensure the response DTO includes the `stock_actual` field as a number.
+
+## 3. Documentation (Swagger)
+- Update the Swagger decorators in the Controller and DTO:
+  - @ApiProperty for `stock_actual` describing it as the "Current calculated stock based on movement history".
+  - Ensure the example value is consistent with the calculation logic.
+
+## 4. Execution
+- Update the Product Service `findAll` method (or equivalent).
+- Ensure the logic remains consistent with the existing `Product` entity and `Movement` relationship.
+
+**Please provide the updated code for the Service, the response DTO, and the Controller.**

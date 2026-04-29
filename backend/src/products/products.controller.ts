@@ -2,6 +2,7 @@ import {
   Body,
   Controller,
   Delete,
+  Get,
   HttpCode,
   HttpStatus,
   Param,
@@ -23,6 +24,7 @@ import {
 import { ZodValidationPipe } from '../common/pipes/zod-validation.pipe';
 import { Product } from '../database/entities/product.entity';
 import { CreateProductApiDto } from './dto/create-product-api.dto';
+import { ProductListItemDto } from './dto/product-list-item.dto';
 import {
   createProductBodySchema,
   type CreateProductBody,
@@ -33,6 +35,21 @@ import { ProductsService } from './products.service';
 @Controller('products')
 export class ProductsController {
   constructor(private readonly productsService: ProductsService) {}
+
+  @Get()
+  @ApiOperation({
+    summary: 'List products with calculated stock',
+    description:
+      'T-004 — Each item includes `stock_actual` (sum of IN movements − sum of OUT movements) via a single aggregated query.',
+  })
+  @ApiOkResponse({
+    description: 'Products with stock_actual',
+    type: ProductListItemDto,
+    isArray: true,
+  })
+  findAll(): Promise<ProductListItemDto[]> {
+    return this.productsService.findAll();
+  }
 
   @Post()
   @HttpCode(HttpStatus.CREATED)

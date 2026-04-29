@@ -9,6 +9,28 @@ import { ProductsService } from './products.service';
 describe('ProductsService', () => {
   let service: ProductsService;
 
+  const mockBalanceSubQueryBuilder = {
+    select: jest.fn().mockReturnThis(),
+    addSelect: jest.fn().mockReturnThis(),
+    from: jest.fn().mockReturnThis(),
+    groupBy: jest.fn().mockReturnThis(),
+    getQuery: jest.fn(() => '(aggregated_movements_subquery)'),
+  };
+
+  const mockProductListQb = {
+    leftJoin: jest.fn().mockReturnThis(),
+    addSelect: jest.fn().mockReturnThis(),
+    orderBy: jest.fn().mockReturnThis(),
+    setParameters: jest.fn().mockReturnThis(),
+    getRawAndEntities: jest.fn(),
+  };
+
+  const mockManager = {
+    findOne: jest.fn(),
+    count: jest.fn(),
+    delete: jest.fn(),
+  };
+
   const mockRepo = {
     create: jest.fn((data: Partial<Product>) => data),
     save: jest.fn((entity: Product) =>
@@ -19,12 +41,7 @@ describe('ProductsService', () => {
         updatedAt: new Date('2026-01-01'),
       }),
     ),
-  };
-
-  const mockManager = {
-    findOne: jest.fn(),
-    count: jest.fn(),
-    delete: jest.fn(),
+    createQueryBuilder: jest.fn(() => mockProductListQb),
   };
 
   const mockDataSource = {
@@ -33,6 +50,9 @@ describe('ProductsService', () => {
         await cb(mockManager);
       },
     ),
+    createQueryBuilder: jest.fn(() => ({
+      subQuery: jest.fn(() => mockBalanceSubQueryBuilder),
+    })),
   };
 
   beforeEach(async () => {
@@ -78,6 +98,57 @@ describe('ProductsService', () => {
     expect(mockRepo.save).toHaveBeenCalled();
     expect(product.id).toBeDefined();
     expect(product.name).toBe(dto.name);
+  });
+
+  describe('findAll (T-004)', () => {
+    it('maps stock_actual from aggregated raw column', async () => {
+      const productEntity = {
+        id: '550e8400-e29b-41d4-a716-446655440001',
+        name: 'P',
+        description: 'd',
+        unit: 'KG',
+        category: 'c',
+        stock_minimo: 1,
+        status: 'ACTIVO',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      } as Product;
+
+      mockProductListQb.getRawAndEntities.mockResolvedValue({
+        entities: [productEntity],
+        raw: [{ stock_actual: '23' }],
+      });
+
+      const rows = await service.findAll();
+
+      expect(mockDataSource.createQueryBuilder).toHaveBeenCalled();
+      expect(mockRepo.createQueryBuilder).toHaveBeenCalledWith('product');
+      expect(rows).toHaveLength(1);
+      expect(rows[0].stock_actual).toBe(23);
+      expect(rows[0].name).toBe('P');
+    });
+
+    it('defaults stock_actual to 0 when raw omits the column', async () => {
+      mockProductListQb.getRawAndEntities.mockResolvedValue({
+        entities: [
+          {
+            id: '550e8400-e29b-41d4-a716-446655440002',
+            name: 'Q',
+            description: '',
+            unit: 'KG',
+            category: '',
+            stock_minimo: 0,
+            status: 'ACTIVO',
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          } as Product,
+        ],
+        raw: [{}],
+      });
+
+      const rows = await service.findAll();
+      expect(rows[0].stock_actual).toBe(0);
+    });
   });
 
   describe('delete (T-002)', () => {

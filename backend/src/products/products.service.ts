@@ -7,6 +7,7 @@ import type { CreateProductBody } from './schemas/create-product.schema';
 import {
   createProductService,
   type ProductServiceFactoryReturn,
+  type ProductWithStockActual,
 } from './services/product/product.factory';
 
 @Injectable()
@@ -27,6 +28,10 @@ export class ProductsService {
 
   create(body: CreateProductBody): Promise<Product> {
     return this.productApi.createProduct(body);
+  }
+
+  findAll(): Promise<ProductWithStockActual[]> {
+    return this.productApi.findAllWithStock();
   }
 
   delete(productId: string): Promise<void> {
