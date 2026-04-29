@@ -31,7 +31,7 @@ erDiagram
 ## Nota sobre `stock_actual` y M8
 
 - **Stock actual:** atributo **calculado** a partir de `MOVEMENT` (suma `IN` − suma `OUT` por `product_id`). No aparece en `PRODUCT` en el esquema persistente.
-- **Regla M8 (alerta):** condición lógica `stock_actual <= stock_minimo` evaluada en consulta (p. ej. `GET /products` enriquecido, `GET /inventory/alerts`), no como columna de alerta en esta ER.
+- **Regla M8 (alerta):** condición lógica `stock_actual <= stock_minimo` evaluada en consulta (p. ej. `GET /products` enriquecido, `GET /inventory/alerts/low-stock`), no como columna de alerta en esta ER.
 
 ## Integridad (T-002)
 

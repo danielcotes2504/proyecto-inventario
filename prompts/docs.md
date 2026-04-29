@@ -24,7 +24,7 @@ He revisado el PRD inicial y es necesario integrar las siguientes precisiones t√
 
    - POST /movements (Debe ejecutar una transacci√≥n que valide stock disponible antes de restar).
 
-   - GET /inventory/alerts (Debe retornar productos donde stock_actual <= stock_minimo).
+   - GET /inventory/alerts/low-stock (Debe retornar productos donde stock_actual <= stock_minimo).
 
 
 

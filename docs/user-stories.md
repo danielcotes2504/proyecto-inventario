@@ -85,7 +85,7 @@ Escenario: Stock actual calculado como entradas menos salidas
 **Quiero** identificar qué productos están en o bajo su stock mínimo  
 **Para** reaccionar a tiempo a faltantes.
 
-```gherkin
+> **Contrato API (referencia):** listado de alertas por bajo stock: `GET /inventory/alerts/low-stock` (regla M8 inclusiva).
 Escenario: Producto en alerta cuando el stock es igual o inferior al mínimo (M8 inclusiva)
   Dado un producto con stock mínimo definido
   Y su stock actual es estrictamente menor que el mínimo
@@ -156,6 +156,6 @@ Escenario: Validación proactiva mientras edito el formulario
 | US-BE-01  | Backend | Registro y borrado de producto (sin borrar si hay movimientos) |
 | US-BE-02  | Backend | Salida de stock transaccional y no negativa        |
 | US-BE-03  | Backend | `stock_actual` en listado                          |
-| US-BE-04  | Backend | `GET` alertas; regla M8 inclusiva                  |
+| US-BE-04  | Backend | Alertas M8 (`GET /inventory/alerts/low-stock`); regla inclusiva                  |
 | US-FE-01  | Frontend | Lista: StockBadge rojo (M8)                        |
 | US-FE-02  | Frontend | Formulario movimientos: validación en tiempo real  |

@@ -63,17 +63,94 @@ Artefacto técnico derivado de [user-stories.md](./user-stories.md). Criterios y
 
 ---
 
-## T-005 — `GET /inventory/alerts` y regla M8 inclusiva (US-BE-04)
+## T-005 — `GET /inventory/alerts/low-stock` y regla M8 inclusiva (US-BE-04)
 
 - **Título:** Endpoint de alertas solo para productos con `stock_actual <= stock_mínimo`.
 - **Historia de Usuario Relacionada:** US-BE-04
-- **Descripción Técnica:** Implementar `GET /inventory/alerts` que devuelva **únicamente** productos en alerta. Criterio de negocio: **inclusivo** — alerta si `stock_actual <= stock_mínimo` (incluye igualdad estricta con el mínimo). Reutilizar la misma definición de `stock_actual` que en listados. Filtrar en consulta o capa de servicio; la respuesta debe contener la información necesaria para el front (p. ej. id, nombres, `stock_actual`, `stock_mínimo`).
+- **Descripción Técnica:** Implementar `GET /inventory/alerts/low-stock` (antes `/inventory/alerts`) que devuelva **únicamente** productos en alerta por **bajo stock**. Criterio de negocio: **inclusivo** — alerta si `stock_actual <= stock_mínimo` (incluye igualdad estricta con el mínimo). Reutilizar la misma definición de `stock_actual` que en listados. Filtrar en consulta o capa de servicio; la respuesta debe contener la información necesaria para el front (p. ej. id, nombres, `stock_actual`, `stock_mínimo`).
 - **Criterios de Aceptación:**
   - [ ] Productos con `stock_actual` **menor** que el mínimo aparecen en el listado.
   - [ ] Productos con `stock_actual` **igual** al mínimo también aparecen (M8 inclusiva).
   - [ ] Productos con `stock_actual` **mayor** que el mínimo **no** aparecen.
-  - [ ] Endpoint dedicado; no mezclar con listado general salvo reutilizar componentes internos.
+  - [ ] Endpoint dedicado bajo el prefijo `/inventory/alerts/…`; no mezclar con listado general salvo reutilizar componentes internos.
   - [ ] Criterio explícitamente alineado con regla M8 del PRD.
+
+---
+
+## T-008 — Detalle de producto `GET /products/:id` (US-BE-01 / US-BE-03)
+
+- **Título:** Obtener un producto por identificador con `stock_actual` calculado.
+- **Historia de Usuario Relacionada:** US-BE-01 (lectura de recurso); US-BE-03 (stock coherente con movimientos).
+- **Descripción Técnica:** Implementar `GET /products/:id` que devuelva el producto persistido y **`stock_actual`** con la **misma fórmula** que en `GET /products` (suma entradas − suma salidas; sin movimientos ⇒ `0`). Evitar N+1: una consulta con agregado/subconsulta o join equivalente al criterio de T-004. Respuesta **404** si el `id` no existe. Documentar en Swagger (DTO de respuesta alineado al detalle + `stock_actual`).
+- **Criterios de Aceptación:**
+  - [ ] Producto existente: respuesta 200 con todos los campos persistidos y `stock_actual` correcto frente a movimientos de prueba.
+  - [ ] Producto sin movimientos: `stock_actual === 0`.
+  - [ ] `id` inválido o desconocido: **404** acorde al estándar del proyecto.
+  - [ ] Contrato OpenAPI actualizado (`@ApiOperation`, `@ApiParam`, `@ApiOkResponse`, `@ApiNotFoundResponse`).
+
+---
+
+## T-009 — Actualización parcial de producto `PATCH /products/:id` (US-BE-01)
+
+- **Título:** Editar atributos editables del producto sin reemplazo total del recurso.
+- **Historia de Usuario Relacionada:** US-BE-01
+- **Descripción Técnica:** Implementar `PATCH /products/:id` con cuerpo **parcial** (solo campos enviados se actualizan). Validar dominio igual que en creación para los campos presentes (unidad, estado, `stock_minimo` ≥ 0, etc., según PRD). No permitir cambiar el `id`. Respuesta con el producto actualizado; **404** si no existe. Opcional: tras actualización, incluir en la respuesta `stock_actual` calculado como en T-008 para coherencia con el front (explicitar en implementación). Documentación Swagger y pruebas de servicio/controlador según el patrón del repo (p. ej. Zod + pipe).
+- **Criterios de Aceptación:**
+  - [ ] Un solo campo en el body actualiza solo ese campo; resto inalterado en base de datos.
+  - [ ] Campos inválidos u omitidos no corrompen datos; errores de validación **400** claros.
+  - [ ] Producto inexistente: **404**.
+  - [ ] No altera reglas de borrado T-002 ni de movimientos T-003.
+
+---
+
+## T-010 — Listado de movimientos `GET /movements` (US-BE-02)
+
+- **Título:** Consultar historial de movimientos con paginación y orden definido.
+- **Historia de Usuario Relacionada:** US-BE-02
+- **Descripción Técnica:** Implementar `GET /movements` que devuelva una colección de movimientos. Definir **orden por defecto** (recomendado: `createdAt` descendente o `movement_date` descendente según modelo). Incluir **paginación** (`limit`/`offset` o `page`/`pageSize` — documentar convención). Opcional: filtro por `productId`, por tipo IN/OUT, por rango de fechas (si el alcance lo permite). Respuesta con metadatos de paginación si se usa cursor/page (explicitar en ticket de implementación). Swagger actualizado.
+- **Criterios de Aceptación:**
+  - [ ] Lista vacía cuando no hay movimientos (200 con colección vacía).
+  - [ ] Los ítems incluyen al menos: `id`, `type`, `quantity`, `reason`, `date`, `productId`, `createdAt` (y relación mínima necesaria para el contrato).
+  - [ ] Paginación estable y documentada; sin cargar todo el historial en memoria antes de paginar en consultas grandes.
+  - [ ] Prueba(s) que cubran paginación o filtro acordado.
+
+---
+
+## T-011 — Detalle de movimiento `GET /movements/:id` (US-BE-02)
+
+- **Título:** Obtener un movimiento por identificador.
+- **Historia de Usuario Relacionada:** US-BE-02
+- **Descripción Técnica:** Implementar `GET /movements/:id` que devuelva una única fila de movimiento. **404** si no existe. Opcional: incluir datos mínimos del producto enlazado (solo lectura) si el front lo requiere — definir en DTO de respuesta y Swagger.
+- **Criterios de Aceptación:**
+  - [ ] Movimiento existente: **200** con cuerpo completo según contrato.
+  - [ ] UUID inexistente: **404**.
+  - [ ] Documentación Swagger (`@ApiParam`, respuestas 200/404).
+
+---
+
+## T-012 — Vista agregada de inventario `GET /inventory` (US-BE-03)
+
+- **Título:** Listado de inventario (posiciones) para la vista global de existencias.
+- **Historia de Usuario Relacionada:** US-BE-03
+- **Descripción Técnica:** Implementar `GET /inventory` que exponga una colección orientada a **inventario**: por cada producto (o posición), incluir al menos **identificador**, **nombre**, **`stock_actual`** (misma definición que T-004), **`stock_minimo`** y un campo derivado **`low_stock`** (o nombre acordado) booleano tal que sea verdadero **si y solo si** se cumple la regla M8 inclusiva (`stock_actual <= stock_minimo`). Optimizar en base de datos (una consulta agregada / join con la subconsulta de saldos compartida con T-004/T-005 cuando sea posible). Opcional: paginación si el catálogo crece. Swagger actualizado.
+- **Criterios de Aceptación:**
+  - [ ] Coherencia numérica de `stock_actual` con `GET /products`.
+  - [ ] `low_stock` alineado con M8 (inclusivo en el límite).
+  - [ ] Sin bucles por producto que repercutan en N+1 sobre movimientos.
+  - [ ] Contrato documentado en OpenAPI.
+
+---
+
+## T-013 — Detalle de inventario por producto `GET /inventory/:productId` (US-BE-03 / US-BE-02 lectura)
+
+- **Título:** Consultar inventario de un producto concreto.
+- **Historia de Usuario Relacionada:** US-BE-03 (stock y umbrales); US-BE-02 (contexto de historial, solo lectura).
+- **Descripción Técnica:** Implementar `GET /inventory/:productId` donde `:productId` es UUID del producto. Respuesta incluye al menos: datos base del producto (o subconjunto acordado), **`stock_actual`**, **`stock_minimo`**, **`low_stock`** (M8 inclusiva). Opcional en el mismo ticket o subsiguiente: resumen de últimos movimientos (p. ej. últimos N) **sin** duplicar la lógica transaccional de T-003 — preferible consulta de lectura acotada o remisión al cliente a `GET /movements?productId=…`. **404** si el producto no existe. **Orden de rutas:** en el controlador de inventario, registrar rutas estáticas (`GET /inventory`, `GET /inventory/alerts/low-stock`, …) **antes** de `@Get(':productId')`; usar **`ParseUUIDPipe`** en `:productId` para evitar que segmentos como `alerts` se interpreten como identificador.
+- **Criterios de Aceptación:**
+  - [ ] Producto existente: **200** con `stock_actual` correcto.
+  - [ ] Producto inexistente: **404**.
+  - [ ] `low_stock` coherente con M8.
+  - [ ] Swagger con `@ApiParam` para `productId`.
 
 ---
 
@@ -81,7 +158,7 @@ Artefacto técnico derivado de [user-stories.md](./user-stories.md). Criterios y
 
 - **Título:** Tablero/lista con indicador de alerta roja según M8.
 - **Historia de Usuario Relacionada:** US-FE-01
-- **Descripción Técnica:** En la vista de **lista de productos** (dashboard), mostrar metadatos del producto, **stock** (o `stock_actual` recibido) y un componente **StockBadge** (o equivalente) que muestre estado de alerta de color **rojo** cuando se cumpla `stock_actual <= stock_mínimo`, **incluyendo** el caso límite en que el stock es exactamente el mínimo. Consumo vía **Axios** a `GET /products` (y/o `GET /inventory/alerts` si el diseño de UI lo usa de forma complementaria) según arquitectura de datos elegida, manteniendo coherencia con el backend. Sin implementar aún otras pantallas no requeridas por este ticket.
+- **Descripción Técnica:** En la vista de **lista de productos** (dashboard), mostrar metadatos del producto, **stock** (o `stock_actual` recibido) y un componente **StockBadge** (o equivalente) que muestre estado de alerta de color **rojo** cuando se cumpla `stock_actual <= stock_mínimo`, **incluyendo** el caso límite en que el stock es exactamente el mínimo. Consumo vía **Axios** a `GET /products` (y/o `GET /inventory/alerts/low-stock` o `GET /inventory` si el diseño de UI lo usa de forma complementaria) según arquitectura de datos elegida, manteniendo coherencia con el backend. Sin implementar aún otras pantallas no requeridas por este ticket.
 - **Criterios de Aceptación:**
   - [ ] Cada fila o tarjeta refleja stock y umbral mínimo necesarios para evaluar M8.
   - [ ] El indicador es **rojo** cuando `stock_actual <= stock_mínimo` (inclusivo).
@@ -108,9 +185,12 @@ Artefacto técnico derivado de [user-stories.md](./user-stories.md). Criterios y
 
 | Ticket | Historia |
 | ------ | -------- |
-| T-001, T-002 | US-BE-01 |
+| T-001, T-002, T-008, T-009 | US-BE-01 |
+| T-008 | US-BE-01, US-BE-03 |
 | T-003 | US-BE-02 |
+| T-010, T-011 | US-BE-02 |
 | T-004 | US-BE-03 |
+| T-012, T-013 | US-BE-03 (+ lectura US-BE-02 en T-013 opcional) |
 | T-005 | US-BE-04 |
 | T-006 | US-FE-01 |
 | T-007 | US-FE-02 |

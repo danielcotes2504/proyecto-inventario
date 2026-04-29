@@ -35,7 +35,7 @@ Desarrollar un sistema de gestión de inventario profesional utilizando NestJS y
 ### 3.4 Sistema de Alertas (Regla M8)
 * **Lógica Inclusiva:** Un producto entra en estado de alerta si `stock_actual <= stock_minimo`.
 * **Visualización:** El indicador en el frontend debe ser de color **ROJO** cuando se cumpla esta condición (incluyendo el valor exacto del mínimo).
-* **Endpoint:** `GET /inventory/alerts` debe retornar exclusivamente los productos que cumplen esta condición.
+* **Endpoint:** `GET /inventory/alerts/low-stock` debe retornar exclusivamente los productos que cumplen esta condición.
 
 ### 3.5 Historial de Movimientos
 * **Filtros Obligatorios:** Debe permitir la consulta filtrada por producto, tipo (entrada/salida) y rango de fechas (validando que `fechaInicio <= fechaFin`).

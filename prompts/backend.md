@@ -153,7 +153,7 @@ Update the `GET /products` endpoint so that each product in the collection inclu
 Please implement the dedicated alerts endpoint following the business logic defined in the PRD and Ticket T-005.
 
 ## 1. Objective
-Create a specific endpoint `GET /inventory/alerts` that returns ONLY products where the current stock is at or below the minimum threshold.
+Create a specific endpoint `GET /inventory/alerts/low-stock` that returns ONLY products where the current stock is at or below the minimum threshold.
 
 ## 2. Business Logic (M8 Rule)
 - **Filtering Criterion**: A product must be included if and only if `stock_actual <= stock_minimo`.
@@ -161,7 +161,7 @@ Create a specific endpoint `GET /inventory/alerts` that returns ONLY products wh
 - **Consistency**: Use the same calculation logic for `stock_actual` as implemented in T-004 (SUM of IN - SUM of OUT).
 
 ## 3. Technical Requirements
-- **Endpoint**: GET /inventory/alerts
+- **Endpoint**: GET /inventory/alerts/low-stock
 - **Efficiency**: Filter the results at the database level (using HAVING or a subquery) rather than fetching all products and filtering in memory with JavaScript.
 - **Response Payload**: Must include at least: id, name, stock_actual, and stock_minimo.
 - **Code Reuse**: If possible, reuse the query logic/helper from T-004 to maintain a single source of truth for stock calculation.

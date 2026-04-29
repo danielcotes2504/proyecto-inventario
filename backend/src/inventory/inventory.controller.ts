@@ -9,12 +9,12 @@ import { InventoryAlertDto } from './dto/inventory-alert.dto';
 export class InventoryController {
   constructor(private readonly productsService: ProductsService) {}
 
-  @Get('alerts')
+  @Get('alerts/low-stock')
   @ApiOperation({
     summary:
       'Get products that have reached or dropped below their minimum stock (M8 Rule)',
     description:
-      'T-005 — Returns only products where stock_actual ≤ stock_minimo (inclusive). Uses the same stock aggregation as product listings.',
+      'T-005 — Returns only products where stock_actual ≤ stock_minimo (inclusive). Path: GET /inventory/alerts/low-stock. Uses the same stock aggregation as product listings.',
   })
   @ApiOkResponse({
     description: 'List of products in alert status',

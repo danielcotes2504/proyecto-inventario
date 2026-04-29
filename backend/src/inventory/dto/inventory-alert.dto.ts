@@ -1,6 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 
-/** Response row for `GET /inventory/alerts` (M8 inclusive rule). */
+/** Response row for `GET /inventory/alerts/low-stock` (M8 inclusive rule). */
 export class InventoryAlertDto {
   @ApiProperty({
     format: 'uuid',

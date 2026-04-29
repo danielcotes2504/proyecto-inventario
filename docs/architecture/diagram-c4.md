@@ -16,7 +16,7 @@ C4Container
     }
 
     Rel(admin, spa, "Utiliza", "HTTPS")
-    Rel(spa, api, "JSON, REST, Axios", "GET /products, GET /inventory/alerts, POST /movements, etc.")
+    Rel(spa, api, "JSON, REST, Axios", "GET /products, GET /inventory/alerts/low-stock, POST /movements, etc.")
     Rel(api, db, "Persistencia, consultas, transacciones", "TypeORM, SQL")
 ```
 
@@ -27,7 +27,7 @@ Añade en documentación o en el mismo gráfico (anotaciones) los siguientes pun
 | Requisito | Descripción en arquitectura |
 | ---------- | --------------------------- |
 | **Cálculo de `stock_actual`** | **Operación lógica** en la capa de aplicación o en consulta SQL/TypeORM: agregar `Movement` por producto (entradas − salidas). **No** se persiste como columna de saldo en `Product` ([PRD 3.3](../PRD.md#33-consulta-de-stock-actual), [data-model](./data-model.md)). |
-| **Regla M8 (alerta)** | **Requisito de sistema** evaluado al servir `GET /products` (p. ej. DTO con `stock_actual`) y `GET /inventory/alerts`: filtro/flag cuando `stock_actual <= stock_mínimo` (inclusivo). El **SPA** refuerza con **StockBadge** rojo en la lista. |
+| **Regla M8 (alerta)** | **Requisito de sistema** evaluado al servir `GET /products` (p. ej. DTO con `stock_actual`) y `GET /inventory/alerts/low-stock`: filtro/flag cuando `stock_actual <= stock_mínimo` (inclusivo). El **SPA** refuerza con **StockBadge** rojo en la lista. |
 
 Flujo de datos resumido (espacialmente entre contenedores):
 
