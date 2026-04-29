@@ -1,7 +1,71 @@
-# shadcn instructions
+---
+description: >-
+  Frontend standards for the inventory app: TypeScript (type aliases, Zod), Tailwind and shadcn/ui,
+  TanStack Query and Form patterns, feature-folder layout under app/, service factories, and
+  explicit prohibitions (no barrel files, thin components).
+alwaysApply: true
+---
 
-Use the latest version of Shadcn to install new components, like this command to add a button component:
+# Frontend Architecture, Code Standards & Folder Enforcement
 
-```bash
-pnpm dlx shadcn@latest add button
-```
+## 1. Type System & Code Standards
+Cursor must strictly follow these TypeScript standards:
+- **Use `type`, never `interface`**: All data structures and prop types must use `type`.
+- **Do not use enums**: Use literal union types or constant objects with `as const`. 
+  Example: export const ROLES = { ADMIN: "admin" } as const; 
+  type Role = typeof ROLES[keyof typeof ROLES];
+- **Zod as Single Source of Truth**: All schemas must be defined with Zod. TypeScript types MUST be inferred using `z.infer<typeof schema>`.
+- **Naming Conventions**: 
+  - Files and common folders: kebab-case.
+  - React Components: PascalCase.
+  - Variables, functions, and instances: camelCase.
+
+## 2. Styling & UI Components (shadcn/ui & Tailwind)
+- **Styling**: Use Tailwind CSS for all styling.
+- **Components**: Use shadcn/ui for new UI components.
+- **Installation**: To add new components, use the latest shadcn CLI via pnpm:
+  pnpm dlx shadcn@latest add [component-name]
+- **Customization**: Prefer modifying tailwind.config.js or global CSS variables for theme consistency.
+
+## 3. API & Data Fetching (TanStack)
+- **Library**: ONLY tanstack/react-query is allowed for API calls. No raw fetch or axios inside components.
+- **Service Factories**: Services must be created in services/[entity]/ as factory objects.
+  - Files: [entity].service.ts and [entity].types.ts.
+  - Example: export const productService = { get: () => ... };
+- **Mappers**: Mandatory use of mappers to transform API raw data to Zod schemas and vice-versa.
+
+## 4. Logic & Component Boundaries
+- **Logic Placement**: NO business logic or complex data transformations inside components.
+- **10-Line Rule**: If component logic (hooks, handlers, effects) exceeds 10 lines, it MUST be moved to a custom hook.
+- **Forms**: Use tanstack/form combined with zod for all form handling and validation.
+
+## 5. Feature-Oriented Structure (app/features/)
+Each folder in features/ is a self-contained domain module.
+- **Strict Isolation**: No feature can import from another feature folder. Use app/lib/ for shared logic.
+- **Sub-feature nesting**: For entities like user, use sub-folders (e.g., overview, creation) to maintain consistency.
+
+## 6. Global Folder Hierarchy & Enforcement
+Cursor must enforce this exact structure:
+
+app/
+├── components/        # Reusable UI (ui/ folder for shadcn and custom stateless components)
+├── lib/               # Domain-agnostic logic (auth, middleware, common types)
+├── services/          # API Service Factories
+│   └── [entity]/
+│       ├── [entity].service.ts
+│       └── [entity].types.ts
+└── features/          # Domain-specific modules
+    └── [entity]/
+        └── [sub-feature]/
+            ├── index.tsx
+            ├── hooks/
+            ├── types/
+            ├── components/
+            ├── filters/
+            ├── schemas/
+            └── mappers/
+
+## 7. Prohibitions
+- **NO Barrel Files**: Never generate index.ts or index.tsx as re-export aggregators.
+- **NO Logic in Components**: Keep components as thin and presentational as possible.
+- **NO Manual Interfaces**: Use Zod inference for all data-related types.
