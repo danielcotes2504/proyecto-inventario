@@ -1,3 +1,9 @@
+# Prompts · Backend
+
+---
+
+## Database setup & migración inicial (`InitialSchema`)
+
 # Role: Senior Backend Engineer & DevOps
 # Task: Database Setup and Initial Migration
 
@@ -30,7 +36,10 @@ Please perform the following steps to initialize the database layer using `@data
 Follow the project naming conventions (kebab-case for files) and coding standards defined in the rules.
 
 
---------------- First ticket implementation -----------
+---
+
+## T-001 · POST /products
+
 # Role: Senior Backend Developer
 # Task: T-001 Implementation
 /nestjs-best-practices  /terminalskills-skills-typeorm 
@@ -43,13 +52,21 @@ I need to initialize the backend following the @docs/architecture/data-model.md 
 
 **Context Files**: @docs/architecture/data-model.md @docs/architecture/diagram-er.md @.cursor/rules/backend.mdc 
 
----------------------- Swagger config ------------
+
+---
+
+## Swagger UI
+
 # Role: Senior Backend Engineer
 # Task: Professional Swagger UI Integration
 
 Please integrate Swagger (OpenAPI) into the NestJS backend. Use **npm** for installations and follow the project's coding standards. /nestjs-best-practices 
 
------------- Second ticket implementation  --------------
+
+---
+
+## T-002 · DELETE /products/:id (borrado condicional)
+
 # Role: Senior Backend Engineer
 # Task: Implementation of Ticket T-002 (Conditional Product Deletion) @.cursor/skills/backend/nestjs-best-practices/SKILL.md 
 
@@ -79,7 +96,11 @@ Implement the `DELETE /products/:id` endpoint with a safety check for associated
 
 Context files: @docs/tickets.md @docs/user-stories.md 
 
----------------------------- Third ticket implementation --------------------
+
+---
+
+## T-003 · POST /movements (stock transaccional)
+
 # Role: Senior Backend Engineer
 # Task: Implementation of Ticket T-003 (Transactional Stock Movements)
 /nestjs-best-practices 
@@ -118,7 +139,11 @@ Implement the `POST /movements` endpoint with strict stock validation for outgoi
 **Please provide the implementation for the Movement service, controller, and any updates to the DTOs.**
 context files: @docs/user-stories.md @.cursor/rules/backend.mdc 
 
------------------------------ Implementation of Ticket 4 ------------------
+
+---
+
+## T-004 · GET /products (`stock_actual`)
+
 # Role: Senior Backend Engineer
 /nestjs-best-practices 
 # Task: Implementation of Ticket T-004 (Calculated stock_actual in Product List) @docs/tickets.md 
@@ -146,7 +171,12 @@ Update the `GET /products` endpoint so that each product in the collection inclu
 - Ensure the logic remains consistent with the existing `Product` entity and `Movement` relationship.
 
 **Please provide the updated code for the Service, the response DTO, and the Controller.**
--------------------------- Task implementation of Ticket 5 -------------------
+
+
+---
+
+## T-005 · GET /inventory/alerts/low-stock (M8)
+
 # Role: Senior Backend Engineer
 # Task: Implementation of Ticket T-005 (M8 Rule - Inventory Alerts Endpoint) @docs/tickets.md 
 /nestjs-best-practices 
@@ -173,24 +203,52 @@ Create a specific endpoint `GET /inventory/alerts/low-stock` that returns ONLY p
 
 **Please provide the implementation for the new endpoint in the Service and Controller.**
 
------------------ Implementation of ticket T-008 ------------
+
+---
+
+## T-008
+
 Implement T-008 /nestjs-best-practices @tickets.md (78-91) 
 
------------------ Implementation of ticket T-009 ------------
+
+---
+
+## T-009
+
 Implement T-009:
 @tickets.md (93-102) /nestjs-best-practices 
 
---------- Implementation of ticket T-010 -------------
+
+---
+
+## T-010
+
 Implement  T-010: @tickets.md (107-116) /nestjs-best-practices 
 
---------- Implementation of ticket T-011--------------
+
+---
+
+## T-011
+
 Implement  T-011:@tickets.md (121-127)  /nestjs-best-practices 
 
-------- Implementation of ticket T-012 ------------------
+
+---
+
+## T-012
+
 Implement T-012: @tickets.md (133-141) /nestjs-best-practices 
 
-------- Implementation of ticket T-013 ------------------
+
+---
+
+## T-013
+
 Implement T-013: @tickets.md (144-153)  /nestjs-best-practices 
 
--------- Solve a issue related with the CORS policy --------
+
+---
+
+## CORS
+
 Solve the issues in the @backend for the CORS policy

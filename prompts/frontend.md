@@ -1,4 +1,8 @@
-# Frontend Architecture, Code Standards & Folder Enforcement
+# Prompts · Frontend
+
+---
+
+## Frontend Architecture, Code Standards & Folder Enforcement
 
 ## 1. Type System & Code Standards
 Cursor must strictly follow these TypeScript standards:
@@ -52,8 +56,16 @@ app/
 - **NO Logic in Components**: Keep components as thin and presentational as possible.
 - **NO Manual Interfaces**: Use Zod inference for all data-related types.
 
-------- Ticket 006 Implementation -----------
+
+---
+
+## T-006 · Lista de productos (dashboard)
+
 Actúa como un desarrollador Senior Frontend, Implementa el ticket T-006 @tickets.md (157-167)  Para el @frontend , sigue estrictamente las reglas de @.cursor/rules/frontend.mdc , es necesario implemtar la lista de productos en el frontend, esta será la pantalla principal del sistema, donde debe mostrar el listado de todos los productos activos con su nombre, categoría, unidad de medida, stock actual y un indicador visual (Badge) que seále si el produto está bajo el stock mínimo. Debes crear los servicios de movement.service.ts, inventory.service.ts y product.service.ts. Recuerda llamar a los endpoints mediante el servicio usando react query, y los componentes que vayas a crear requeriran /shadcn 
 
------------- Ticket 007 Implementation --------
+
+---
+
+## T-007 · Formulario de movimientos
+
 Actua como un desarrolladro Senior Frontend, experto en React. Implementa el ticket T007 @tickets.md (171-180) para el @frontend, es necesario implementar un formulario para registrar una entrada o salida de stock. Es necesario que para ello hagas uso de tanstac form, un esquema de zod para validar el formulario en el cliente, el formulario debe desplegarse en un Dialog, para ello puedes usar shadcn, una vez hecho el post, la respuesta de la API si es exitosa debe ser desplegada en un toast, o si no, en un toast con variant de error debe ser desplegado /shadcn . El botón que permite registrar una entrada debe encontrarse en la ruta principal por encima de la tabla 

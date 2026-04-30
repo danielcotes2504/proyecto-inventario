@@ -1,12 +1,22 @@
+# Prompts · Documentación / PRD
+
+---
+
+## PRD inicial (product manager)
+
 Actua como un product manager senior. Dado el contexto de un sistema de inventario con backend (NestJS, TypeORM, PostgreSQL, Jest, fast-check, Stryker) y frontend (React y Playwright), genera un PRD con: objetivo, alcance, criterios de aceptación por funcionalidad y restricciones técnicas. Incluye las pantallas de lista de productos y registro de movimiento
 
 
+---
+
+## Refinamiento · ejemplo PDF y stack
 
 Usa el prompt de ejemplo del PDF. Pásale el contexto del negocio (inventario, NestJS, TypeORM, PostgreSQL, Jest, fast-check, Stryker, React, Axios, Playwright) y pidele que defina: objetivo, alcance, criterios de aceptación generales y restricciones
 
-USER CORRECTION & REFINEMENT:
 
+---
 
+## USER CORRECTION & REFINEMENT
 
 He revisado el PRD inicial y es necesario integrar las siguientes precisiones técnicas para asegurar la consistencia de todo el sistema y cumplir con los estándares de calidad requeridos:
 
@@ -46,8 +56,12 @@ He revisado el PRD inicial y es necesario integrar las siguientes precisiones t�
 
    - Testing: Jest (Unitarios), fast-check (PBT), Stryker (Mutation) y Playwright (E2E).
 
-   --------------------- Corrección al ver que faltaban endpoints -----------
-   Analiza el @docs/user-stories.md  y el @docs/tickets.md , me es necesario añadir estos endpoints: 
+
+---
+
+## Corrección · endpoints faltantes
+
+Analiza el @docs/user-stories.md  y el @docs/tickets.md , me es necesario añadir estos endpoints: 
 
 GET /products/:id
 PATCH /products/:id
