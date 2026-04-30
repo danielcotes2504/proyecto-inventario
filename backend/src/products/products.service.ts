@@ -8,6 +8,7 @@ import type { CreateProductBody } from './schemas/create-product.schema';
 import type { UpdateProductBody } from './schemas/update-product.schema';
 import {
   createProductService,
+  type InventoryPositionItem,
   type ProductServiceFactoryReturn,
   type ProductWithStockActual,
 } from './services/product/product.factory';
@@ -34,6 +35,10 @@ export class ProductsService {
 
   findAll(): Promise<ProductWithStockActual[]> {
     return this.productApi.findAllWithStock();
+  }
+
+  findInventoryPositions(): Promise<InventoryPositionItem[]> {
+    return this.productApi.findAllInventoryPositions();
   }
 
   findOne(id: string): Promise<ProductWithStockActual> {

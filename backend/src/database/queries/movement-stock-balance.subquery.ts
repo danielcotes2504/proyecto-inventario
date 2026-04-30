@@ -11,7 +11,7 @@ export const STOCK_MOVEMENT_QUERY_PARAMS = {
 
 /**
  * Aggregates movement quantities per product — **SUM(IN qty) − SUM(OUT qty)**.
- * Shared by product listing (T-004) and inventory alerts (T-005).
+ * Shared by product listing (T-004), inventory alerts (T-005), and global inventory (T-012).
  */
 export function buildMovementStockBalanceSubQuerySql(
   dataSource: DataSource,

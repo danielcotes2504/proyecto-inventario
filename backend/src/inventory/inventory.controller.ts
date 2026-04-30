@@ -3,11 +3,27 @@ import { ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
 
 import { ProductsService } from '../products/products.service';
 import { InventoryAlertDto } from './dto/inventory-alert.dto';
+import { InventoryPositionDto } from './dto/inventory-position.dto';
 
 @ApiTags('inventory')
 @Controller('inventory')
 export class InventoryController {
   constructor(private readonly productsService: ProductsService) {}
+
+  @Get()
+  @ApiOperation({
+    summary: 'Global inventory positions',
+    description:
+      'T-012 — One row per product: `id`, `name`, `stock_actual` (same SUM(IN)−SUM(OUT) aggregation as `GET /products`), `stock_minimo`, and **low_stock** (`stock_actual <= stock_minimo`, M8 inclusive). Single aggregated query; no per-product movement loops.',
+  })
+  @ApiOkResponse({
+    description: 'All catalog positions with stock and low-stock flag',
+    type: InventoryPositionDto,
+    isArray: true,
+  })
+  positions(): Promise<InventoryPositionDto[]> {
+    return this.productsService.findInventoryPositions();
+  }
 
   @Get('alerts/low-stock')
   @ApiOperation({

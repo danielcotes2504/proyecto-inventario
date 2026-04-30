@@ -18,6 +18,15 @@ export type ProductServiceDeps = {
 
 export type ProductWithStockActual = Product & { stock_actual: number };
 
+/** T-012 — Global inventory row (positions); `stock_actual` matches {@link ProductWithStockActual}. */
+export type InventoryPositionItem = {
+  id: string;
+  name: string;
+  stock_actual: number;
+  stock_minimo: number;
+  low_stock: boolean;
+};
+
 function parseAggregateNumber(
   value: string | number | null | undefined,
 ): number {
@@ -71,6 +80,42 @@ export function createProductService(deps: ProductServiceDeps) {
           stock_actual: parseAggregateNumber(
             stockRaw as string | number | null | undefined,
           ),
+        };
+      });
+    },
+
+    /**
+     * T-012 — All products as inventory positions: same **single** aggregated JOIN as T-004,
+     * plus **low_stock** = `(stock_actual <= stock_minimo)` using the parsed numeric balance (M8 inclusive).
+     */
+    async findAllInventoryPositions(): Promise<InventoryPositionItem[]> {
+      const balanceSubQuery = buildMovementStockBalanceSubQuerySql(
+        deps.dataSource,
+      );
+
+      const { entities, raw } = await deps.productRepository
+        .createQueryBuilder('product')
+        .leftJoin(
+          `(${balanceSubQuery})`,
+          'stock_agg',
+          'stock_agg.product_id = product.id',
+        )
+        .addSelect('COALESCE(stock_agg.balance, 0)', 'stock_actual')
+        .orderBy('product.name', 'ASC')
+        .setParameters(STOCK_MOVEMENT_QUERY_PARAMS)
+        .getRawAndEntities();
+
+      return entities.map((product, index) => {
+        const row = raw[index] as Record<string, unknown> | undefined;
+        const stock_actual = parseAggregateNumber(
+          row?.stock_actual as string | number | null | undefined,
+        );
+        return {
+          id: product.id,
+          name: product.name,
+          stock_actual,
+          stock_minimo: product.stock_minimo,
+          low_stock: stock_actual <= product.stock_minimo,
         };
       });
     },

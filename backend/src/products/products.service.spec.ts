@@ -154,6 +154,88 @@ describe('ProductsService', () => {
     });
   });
 
+  describe('findInventoryPositions (T-012)', () => {
+    it('maps stock_actual like GET /products and sets low_stock with M8 inclusive boundary', async () => {
+      const pAtBoundary = {
+        id: '550e8400-e29b-41d4-a716-446655440030',
+        name: 'At boundary',
+        description: '',
+        unit: 'KG',
+        category: '',
+        stock_minimo: 10,
+        status: 'ACTIVO',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      } as Product;
+
+      const pAbove = {
+        id: '550e8400-e29b-41d4-a716-446655440031',
+        name: 'Above min',
+        description: '',
+        unit: 'KG',
+        category: '',
+        stock_minimo: 10,
+        status: 'ACTIVO',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      } as Product;
+
+      const pBelow = {
+        id: '550e8400-e29b-41d4-a716-446655440032',
+        name: 'Below min',
+        description: '',
+        unit: 'KG',
+        category: '',
+        stock_minimo: 10,
+        status: 'ACTIVO',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      } as Product;
+
+      mockProductListQb.getRawAndEntities.mockResolvedValue({
+        entities: [pAtBoundary, pAbove, pBelow],
+        raw: [
+          { stock_actual: '10' },
+          { stock_actual: '11' },
+          { stock_actual: '4' },
+        ],
+      });
+
+      const rows = await service.findInventoryPositions();
+
+      expect(mockRepo.createQueryBuilder).toHaveBeenCalledWith('product');
+      expect(mockProductListQb.leftJoin).toHaveBeenCalled();
+      expect(mockProductListQb.where).not.toHaveBeenCalled();
+      expect(mockProductListQb.orderBy).toHaveBeenCalledWith(
+        'product.name',
+        'ASC',
+      );
+      expect(rows).toEqual([
+        {
+          id: pAtBoundary.id,
+          name: 'At boundary',
+          stock_actual: 10,
+          stock_minimo: 10,
+          low_stock: true,
+        },
+        {
+          id: pAbove.id,
+          name: 'Above min',
+          stock_actual: 11,
+          stock_minimo: 10,
+          low_stock: false,
+        },
+        {
+          id: pBelow.id,
+          name: 'Below min',
+          stock_actual: 4,
+          stock_minimo: 10,
+          low_stock: true,
+        },
+      ]);
+    });
+  });
+
   describe('findOne (T-008)', () => {
     const id = '550e8400-e29b-41d4-a716-446655440011';
 
