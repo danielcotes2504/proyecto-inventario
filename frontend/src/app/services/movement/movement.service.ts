@@ -1,7 +1,7 @@
 import { getApiBaseUrl } from '#/app/lib/api-config';
 import { parseJsonOrThrow } from '#/app/lib/http';
 
-import type { MovementListQuery } from './movement.types';
+import type { CreateMovementBody, MovementListQuery } from './movement.types';
 
 function appendMovementQueryParams(
   sp: URLSearchParams,
@@ -16,6 +16,16 @@ function appendMovementQueryParams(
 }
 
 export const movementService = {
+  create(body: CreateMovementBody, signal?: AbortSignal): Promise<unknown> {
+    const url = `${getApiBaseUrl()}/movements`;
+    return fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+      signal,
+    }).then(parseJsonOrThrow);
+  },
+
   fetchList(
     query?: MovementListQuery,
     signal?: AbortSignal,

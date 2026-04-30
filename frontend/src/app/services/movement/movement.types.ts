@@ -7,6 +7,14 @@ export type MovementListQuery = {
   dateTo?: string;
 };
 
+export type CreateMovementBody = {
+  type: string;
+  quantity: number;
+  productId: string;
+  reason: string;
+  date: string;
+};
+
 export const movementKeys = {
   all: ['movements'] as const,
   list: (query?: MovementListQuery) =>
