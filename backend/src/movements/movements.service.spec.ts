@@ -5,6 +5,7 @@ import { getDataSourceToken, getRepositoryToken } from '@nestjs/typeorm';
 import {
   MOVEMENT_REASON,
   MOVEMENT_TYPE,
+  PRODUCT_UNIT,
 } from '../database/domain/inventory-domain';
 import { Movement } from '../database/entities/movement.entity';
 import { createMovementBodySchema } from './schemas/create-movement.schema';
@@ -35,6 +36,7 @@ describe('MovementsService', () => {
 
   const mockMovementRepo = {
     createQueryBuilder: jest.fn(() => listQueryBuilder),
+    findOne: jest.fn(),
   };
 
   const mockManager = {
@@ -167,6 +169,65 @@ describe('MovementsService', () => {
     ).rejects.toThrow(NotFoundException);
 
     expect(mockManager.save).not.toHaveBeenCalled();
+  });
+
+  describe('findOne (T-011)', () => {
+    const movementId = '660e8400-e29b-41d4-a716-446655440099';
+
+    it('returns movement with minimal product snapshot', async () => {
+      const date = new Date('2026-04-15T10:00:00.000Z');
+      const createdAt = new Date('2026-04-15T10:05:00.000Z');
+
+      mockMovementRepo.findOne.mockResolvedValue({
+        id: movementId,
+        type: MOVEMENT_TYPE.IN,
+        quantity: 5,
+        reason: MOVEMENT_REASON.COMPRA,
+        date,
+        productId,
+        createdAt,
+        product: {
+          id: productId,
+          name: 'Test product',
+          unit: PRODUCT_UNIT.UNIDADES,
+          category: 'Test cat',
+        },
+      });
+
+      const result = await service.findOne(movementId);
+
+      expect(mockMovementRepo.findOne).toHaveBeenCalledWith({
+        where: { id: movementId },
+        relations: ['product'],
+      });
+      expect(result).toEqual({
+        id: movementId,
+        type: MOVEMENT_TYPE.IN,
+        quantity: 5,
+        reason: MOVEMENT_REASON.COMPRA,
+        date,
+        productId,
+        createdAt,
+        product: {
+          id: productId,
+          name: 'Test product',
+          unit: PRODUCT_UNIT.UNIDADES,
+          category: 'Test cat',
+        },
+      });
+    });
+
+    it('throws NotFoundException when movement does not exist', async () => {
+      mockMovementRepo.findOne.mockResolvedValue(null);
+
+      await expect(service.findOne(movementId)).rejects.toThrow(
+        NotFoundException,
+      );
+      expect(mockMovementRepo.findOne).toHaveBeenCalledWith({
+        where: { id: movementId },
+        relations: ['product'],
+      });
+    });
   });
 
   describe('list (T-010)', () => {

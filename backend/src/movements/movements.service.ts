@@ -7,6 +7,7 @@ import type { CreateMovementBody } from './schemas/create-movement.schema';
 import type { ListMovementsQuery } from './schemas/list-movements-query.schema';
 import {
   createMovementService,
+  type MovementDetail,
   type MovementServiceFactoryReturn,
   type PaginatedMovements,
 } from './services/movement/movement.factory';
@@ -28,6 +29,10 @@ export class MovementsService {
 
   list(query: ListMovementsQuery): Promise<PaginatedMovements> {
     return this.movementApi.listMovements(query);
+  }
+
+  findOne(id: string): Promise<MovementDetail> {
+    return this.movementApi.getMovementById(id);
   }
 
   register(body: CreateMovementBody): Promise<Movement> {

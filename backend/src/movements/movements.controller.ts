@@ -4,6 +4,8 @@ import {
   Get,
   HttpCode,
   HttpStatus,
+  Param,
+  ParseUUIDPipe,
   Post,
   Query,
 } from '@nestjs/common';
@@ -14,6 +16,7 @@ import {
   ApiNotFoundResponse,
   ApiOkResponse,
   ApiOperation,
+  ApiParam,
   ApiQuery,
   ApiTags,
 } from '@nestjs/swagger';
@@ -21,6 +24,7 @@ import {
 import { ZodValidationPipe } from '../common/pipes/zod-validation.pipe';
 import { Movement } from '../database/entities/movement.entity';
 import { CreateMovementApiDto } from './dto/create-movement-api.dto';
+import { MovementDetailResponseDto } from './dto/movement-detail-response.dto';
 import { PaginatedMovementsResponseDto } from './dto/paginated-movements-response.dto';
 import {
   createMovementBodySchema,
@@ -98,6 +102,39 @@ export class MovementsController {
     query: ListMovementsQuery,
   ): Promise<PaginatedMovementsResponseDto> {
     return this.movementsService.list(query);
+  }
+
+  @Get(':id')
+  @ApiOperation({
+    summary: 'Get movement by id',
+    description:
+      'T-011 — Returns one movement; **404** if the UUID does not exist. Includes minimal linked **product** (`id`, `name`, `unit`, `category`) for read-only context.',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'Movement UUID',
+    format: 'uuid',
+    example: '550e8400-e29b-41d4-a716-446655440000',
+  })
+  @ApiOkResponse({
+    description: 'Movement found',
+    type: MovementDetailResponseDto,
+  })
+  @ApiNotFoundResponse({
+    description: 'Movement not found',
+    schema: {
+      type: 'object',
+      properties: {
+        statusCode: { type: 'number', example: 404 },
+        message: { type: 'string' },
+        error: { type: 'string', example: 'Not Found' },
+      },
+    },
+  })
+  findOne(
+    @Param('id', new ParseUUIDPipe({ version: '4' })) id: string,
+  ): Promise<MovementDetailResponseDto> {
+    return this.movementsService.findOne(id);
   }
 
   @Post()

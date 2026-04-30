@@ -22,6 +22,22 @@ export type PaginatedMovements = {
   };
 };
 
+export type MovementDetail = {
+  id: string;
+  type: Movement['type'];
+  quantity: number;
+  reason: Movement['reason'];
+  date: Date;
+  productId: string;
+  createdAt: Date;
+  product: {
+    id: string;
+    name: string;
+    unit: Product['unit'];
+    category: string;
+  };
+};
+
 async function getCurrentStock(
   manager: EntityManager,
   productId: string,
@@ -47,6 +63,38 @@ async function getCurrentStock(
 
 export function createMovementService(deps: MovementServiceDeps) {
   return {
+    /**
+     * T-011 — Single movement by id; 404 when missing. Loads minimal product snapshot.
+     */
+    async getMovementById(id: string): Promise<MovementDetail> {
+      const movement = await deps.movementRepository.findOne({
+        where: { id },
+        relations: ['product'],
+      });
+
+      if (!movement) {
+        throw new NotFoundException(`Movement with id "${id}" not found`);
+      }
+
+      const { product } = movement;
+
+      return {
+        id: movement.id,
+        type: movement.type,
+        quantity: movement.quantity,
+        reason: movement.reason,
+        date: movement.date,
+        productId: movement.productId,
+        createdAt: movement.createdAt,
+        product: {
+          id: product.id,
+          name: product.name,
+          unit: product.unit,
+          category: product.category,
+        },
+      };
+    },
+
     /**
      * T-010 — Paginated list; default order `createdAt` DESC, then `id` DESC.
      * Filters applied in SQL (no full-table load in memory).
