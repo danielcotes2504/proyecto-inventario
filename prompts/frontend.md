@@ -51,3 +51,6 @@ app/
 - **NO Barrel Files**: Never generate `index.ts` or `index.tsx` as re-export aggregators.
 - **NO Logic in Components**: Keep components as thin and presentational as possible.
 - **NO Manual Interfaces**: Use Zod inference for all data-related types.
+
+------- Ticket 006 Implementation -----------
+Actúa como un desarrollador Senior Frontend, Implementa el ticket T-006 @tickets.md (157-167)  Para el @frontend , sigue estrictamente las reglas de @.cursor/rules/frontend.mdc , es necesario implemtar la lista de productos en el frontend, esta será la pantalla principal del sistema, donde debe mostrar el listado de todos los productos activos con su nombre, categoría, unidad de medida, stock actual y un indicador visual (Badge) que seále si el produto está bajo el stock mínimo. Debes crear los servicios de movement.service.ts, inventory.service.ts y product.service.ts. Recuerda llamar a los endpoints mediante el servicio usando react query, y los componentes que vayas a crear requeriran /shadcn 

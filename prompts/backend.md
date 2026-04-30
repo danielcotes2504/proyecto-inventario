@@ -191,3 +191,6 @@ Implement T-012: @tickets.md (133-141) /nestjs-best-practices
 
 ------- Implementation of ticket T-013 ------------------
 Implement T-013: @tickets.md (144-153)  /nestjs-best-practices 
+
+-------- Solve a issue related with the CORS policy --------
+Solve the issues in the @backend for the CORS policy
