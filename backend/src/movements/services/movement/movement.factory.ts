@@ -1,13 +1,25 @@
 import { BadRequestException, NotFoundException } from '@nestjs/common';
-import type { DataSource, EntityManager } from 'typeorm';
+import type { DataSource, EntityManager, Repository } from 'typeorm';
 
 import { MOVEMENT_TYPE } from '../../../database/domain/inventory-domain';
 import { Movement } from '../../../database/entities/movement.entity';
 import { Product } from '../../../database/entities/product.entity';
 import type { CreateMovementBody } from '../../schemas/create-movement.schema';
+import type { ListMovementsQuery } from '../../schemas/list-movements-query.schema';
 
 export type MovementServiceDeps = {
   dataSource: DataSource;
+  movementRepository: Repository<Movement>;
+};
+
+export type PaginatedMovements = {
+  items: Movement[];
+  meta: {
+    total: number;
+    page: number;
+    pageSize: number;
+    totalPages: number;
+  };
 };
 
 async function getCurrentStock(
@@ -35,6 +47,45 @@ async function getCurrentStock(
 
 export function createMovementService(deps: MovementServiceDeps) {
   return {
+    /**
+     * T-010 — Paginated list; default order `createdAt` DESC, then `id` DESC.
+     * Filters applied in SQL (no full-table load in memory).
+     */
+    async listMovements(
+      query: ListMovementsQuery,
+    ): Promise<PaginatedMovements> {
+      const { page, pageSize, productId, type, dateFrom, dateTo } = query;
+
+      const qb = deps.movementRepository
+        .createQueryBuilder('movement')
+        .orderBy('movement.createdAt', 'DESC')
+        .addOrderBy('movement.id', 'DESC');
+
+      if (productId) {
+        qb.andWhere('movement.productId = :productId', { productId });
+      }
+      if (type) {
+        qb.andWhere('movement.type = :type', { type });
+      }
+      if (dateFrom) {
+        qb.andWhere('movement.date >= :dateFrom', { dateFrom });
+      }
+      if (dateTo) {
+        qb.andWhere('movement.date <= :dateTo', { dateTo });
+      }
+
+      const skip = (page - 1) * pageSize;
+      qb.skip(skip).take(pageSize);
+
+      const [items, total] = await qb.getManyAndCount();
+      const totalPages = total === 0 ? 0 : Math.ceil(total / pageSize);
+
+      return {
+        items,
+        meta: { total, page, pageSize, totalPages },
+      };
+    },
+
     async registerMovement(payload: CreateMovementBody): Promise<Movement> {
       return deps.dataSource.transaction(async (manager) => {
         const product = await manager.findOne(Product, {
