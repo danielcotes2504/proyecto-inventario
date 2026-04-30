@@ -277,6 +277,57 @@ describe('ProductsService', () => {
     });
   });
 
+  describe('findInventoryProductDetail (T-013)', () => {
+    const productId = '550e8400-e29b-41d4-a716-446655440099';
+
+    it('returns catalog subset with stock_actual and low_stock (M8 inclusive)', async () => {
+      const entity = {
+        id: productId,
+        name: 'Detail',
+        description: 'Full desc',
+        unit: 'LITROS',
+        category: 'Cat',
+        stock_minimo: 10,
+        status: 'ACTIVO',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      } as Product;
+
+      mockProductListQb.getRawAndEntities.mockResolvedValue({
+        entities: [entity],
+        raw: [{ stock_actual: '10' }],
+      });
+
+      const row = await service.findInventoryProductDetail(productId);
+
+      expect(mockProductListQb.where).toHaveBeenCalledWith('product.id = :id', {
+        id: productId,
+      });
+      expect(row).toEqual({
+        id: productId,
+        name: 'Detail',
+        description: 'Full desc',
+        unit: 'LITROS',
+        category: 'Cat',
+        status: 'ACTIVO',
+        stock_minimo: 10,
+        stock_actual: 10,
+        low_stock: true,
+      });
+    });
+
+    it('throws NotFoundException when product does not exist', async () => {
+      mockProductListQb.getRawAndEntities.mockResolvedValue({
+        entities: [],
+        raw: [],
+      });
+
+      await expect(
+        service.findInventoryProductDetail(productId),
+      ).rejects.toThrow(NotFoundException);
+    });
+  });
+
   describe('update / patch (T-009)', () => {
     const id = '550e8400-e29b-41d4-a716-446655440077';
 

@@ -3,6 +3,7 @@ import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
 import type { DataSource, Repository } from 'typeorm';
 
 import { Product } from '../database/entities/product.entity';
+import type { InventoryProductDetailDto } from '../inventory/dto/inventory-product-detail.dto';
 import type { InventoryAlertItem } from '../inventory/types/inventory-alert.item';
 import type { CreateProductBody } from './schemas/create-product.schema';
 import type { UpdateProductBody } from './schemas/update-product.schema';
@@ -39,6 +40,26 @@ export class ProductsService {
 
   findInventoryPositions(): Promise<InventoryPositionItem[]> {
     return this.productApi.findAllInventoryPositions();
+  }
+
+  /**
+   * T-013 — Single-product inventory view; reuses `findOneWithStock` (one aggregated query, 404 if missing).
+   */
+  async findInventoryProductDetail(
+    productId: string,
+  ): Promise<InventoryProductDetailDto> {
+    const p = await this.productApi.findOneWithStock(productId);
+    return {
+      id: p.id,
+      name: p.name,
+      description: p.description,
+      unit: p.unit,
+      category: p.category,
+      status: p.status,
+      stock_minimo: p.stock_minimo,
+      stock_actual: p.stock_actual,
+      low_stock: p.stock_actual <= p.stock_minimo,
+    };
   }
 
   findOne(id: string): Promise<ProductWithStockActual> {

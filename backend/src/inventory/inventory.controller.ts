@@ -1,9 +1,16 @@
-import { Controller, Get } from '@nestjs/common';
-import { ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { Controller, Get, Param, ParseUUIDPipe } from '@nestjs/common';
+import {
+  ApiNotFoundResponse,
+  ApiOkResponse,
+  ApiOperation,
+  ApiParam,
+  ApiTags,
+} from '@nestjs/swagger';
 
 import { ProductsService } from '../products/products.service';
 import { InventoryAlertDto } from './dto/inventory-alert.dto';
 import { InventoryPositionDto } from './dto/inventory-position.dto';
+import { InventoryProductDetailDto } from './dto/inventory-product-detail.dto';
 
 @ApiTags('inventory')
 @Controller('inventory')
@@ -39,5 +46,40 @@ export class InventoryController {
   })
   alerts(): Promise<InventoryAlertDto[]> {
     return this.productsService.findInventoryAlerts();
+  }
+
+  /** Declared after static paths so `alerts` is never parsed as a UUID. */
+  @Get(':productId')
+  @ApiOperation({
+    summary: 'Inventory detail for one product',
+    description:
+      'T-013 — Product subset (`id`, `name`, `description`, `unit`, `category`, `status`), **`stock_actual`** (same aggregation as `GET /products/:id`), **`stock_minimo`**, **`low_stock`** (M8 inclusive). **404** if the product does not exist. For full movement history use `GET /movements?productId=…`.',
+  })
+  @ApiParam({
+    name: 'productId',
+    description: 'Product UUID',
+    format: 'uuid',
+    example: '550e8400-e29b-41d4-a716-446655440000',
+  })
+  @ApiOkResponse({
+    description: 'Product inventory snapshot',
+    type: InventoryProductDetailDto,
+  })
+  @ApiNotFoundResponse({
+    description: 'Product not found',
+    schema: {
+      type: 'object',
+      properties: {
+        statusCode: { type: 'number', example: 404 },
+        message: { type: 'string' },
+        error: { type: 'string', example: 'Not Found' },
+      },
+    },
+  })
+  productDetail(
+    @Param('productId', new ParseUUIDPipe({ version: '4' }))
+    productId: string,
+  ): Promise<InventoryProductDetailDto> {
+    return this.productsService.findInventoryProductDetail(productId);
   }
 }

@@ -188,3 +188,6 @@ Implement  T-011:@tickets.md (121-127)  /nestjs-best-practices
 
 ------- Implementation of ticket T-012 ------------------
 Implement T-012: @tickets.md (133-141) /nestjs-best-practices 
+
+------- Implementation of ticket T-013 ------------------
+Implement T-013: @tickets.md (144-153)  /nestjs-best-practices 

@@ -17,7 +17,7 @@ async function bootstrap() {
     .addTag('movements', 'Stock movements — IN/OUT (T-003)')
     .addTag(
       'inventory',
-      'Global inventory positions (T-012) & low-stock alerts / M8 (T-005)',
+      'Positions (T-012), per-product detail (T-013), low-stock alerts / M8 (T-005)',
     )
     .build();
 
