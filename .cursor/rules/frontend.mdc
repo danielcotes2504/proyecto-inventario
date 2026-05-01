@@ -1,71 +1,82 @@
 ---
 description: >-
-  Frontend standards for the inventory app: TypeScript (type aliases, Zod), Tailwind and shadcn/ui,
-  TanStack Query and Form patterns, feature-folder layout under app/, service factories, and
-  explicit prohibitions (no barrel files, thin components).
+  Frontend standards for the inventory app: flat src/pages and src/components layout,
+  central Axios + TanStack Query in src/services/api.ts, Playwright under src/e2e/,
+  TypeScript (type aliases, Zod), Tailwind and shadcn/ui.
 alwaysApply: true
 ---
 
-# Frontend Architecture, Code Standards & Folder Enforcement
+# Frontend Architecture — mandatory structure (UPDATED)
 
-## 1. Type System & Code Standards
-Cursor must strictly follow these TypeScript standards:
-- **Use `type`, never `interface`**: All data structures and prop types must use `type`.
-- **Do not use enums**: Use literal union types or constant objects with `as const`. 
-  Example: export const ROLES = { ADMIN: "admin" } as const; 
-  type Role = typeof ROLES[keyof typeof ROLES];
-- **Zod as Single Source of Truth**: All schemas must be defined with Zod. TypeScript types MUST be inferred using `z.infer<typeof schema>`.
-- **Naming Conventions**: 
-  - Files and common folders: kebab-case.
-  - React Components: PascalCase.
-  - Variables, functions, and instances: camelCase.
+**Deprecated (do not use for new work):** `app/features/`, per-entity service factories under `app/services/[entity]/`, and any feature-folder nesting described in older versions of this rule.
 
-## 2. Styling & UI Components (shadcn/ui & Tailwind)
-- **Styling**: Use Tailwind CSS for all styling.
-- **Components**: Use shadcn/ui for new UI components.
-- **Installation**: To add new components, use the latest shadcn CLI via pnpm:
-  pnpm dlx shadcn@latest add [component-name]
-- **Customization**: Prefer modifying tailwind.config.js or global CSS variables for theme consistency.
+The project MUST follow the map below. Cursor must treat this as non-negotiable unless the user explicitly changes it.
 
-## 3. API & Data Fetching (TanStack)
-- **Library**: ONLY tanstack/react-query is allowed for API calls. No raw fetch or axios inside components.
-- **Service Factories**: Services must be created in services/[entity]/ as factory objects.
-  - Files: [entity].service.ts and [entity].types.ts.
-  - Example: export const productService = { get: () => ... };
-- **Mappers**: Mandatory use of mappers to transform API raw data to Zod schemas and vice-versa.
+---
 
-## 4. Logic & Component Boundaries
-- **Logic Placement**: NO business logic or complex data transformations inside components.
-- **10-Line Rule**: If component logic (hooks, handlers, effects) exceeds 10 lines, it MUST be moved to a custom hook.
-- **Forms**: Use tanstack/form combined with zod for all form handling and validation.
+## 1. Mandatory folder & file map
 
-## 5. Feature-Oriented Structure (app/features/)
-Each folder in features/ is a self-contained domain module.
-- **Strict Isolation**: No feature can import from another feature folder. Use app/lib/ for shared logic.
-- **Sub-feature nesting**: For entities like user, use sub-folders (e.g., overview, creation) to maintain consistency.
+```text
+└── src
+    ├── pages/
+    │   ├── ProductList.tsx
+    │   └── MovementForm.tsx
+    ├── components/
+    │   ├── ProductCard.tsx
+    │   ├── StockBadge.tsx
+    │   └── MovementForm.tsx    # UI component (name collision with page is intentional per map; import with aliases if needed)
+    ├── services/
+    │   └── api.ts               # Single source: Axios + TanStack Query hooks
+    └── e2e/                     # Playwright
+        ├── product-list.spec.ts
+        └── movement-form.spec.ts
+```
 
-## 6. Global Folder Hierarchy & Enforcement
-Cursor must enforce this exact structure:
+- **`src/pages/`**: Only route-level composition and wiring (import UI from `src/components/`, call hooks from `src/services/api.ts`). No nested folders unless the user explicitly asks.
+- **`src/components/`**: Presentational/feature UI named above; **no nested folders** unless the user explicitly asks.
+- **`src/services/api.ts`**: The **only** module for outbound HTTP: Axios client configuration, endpoints, and **all** `useQuery` / `useMutation` hooks. Pages and components MUST NOT define server-fetch hooks elsewhere.
+- **`src/e2e/`**: Playwright specs; **kebab-case** file names (e.g. `product-list.spec.ts`).
 
-app/
-├── components/        # Reusable UI (ui/ folder for shadcn and custom stateless components)
-├── lib/               # Domain-agnostic logic (auth, middleware, common types)
-├── services/          # API Service Factories
-│   └── [entity]/
-│       ├── [entity].service.ts
-│       └── [entity].types.ts
-└── features/          # Domain-specific modules
-    └── [entity]/
-        └── [sub-feature]/
-            ├── index.tsx
-            ├── hooks/
-            ├── types/
-            ├── components/
-            ├── filters/
-            ├── schemas/
-            └── mappers/
+**Exception — shadcn primitives:** Installing components via the shadcn CLI may create **`src/components/ui/`** for generated primitives only. Do not add other subfolders under `src/components/` or `src/pages/` without explicit user approval.
 
-## 7. Prohibitions
-- **NO Barrel Files**: Never generate index.ts or index.tsx as re-export aggregators.
-- **NO Logic in Components**: Keep components as thin and presentational as possible.
-- **NO Manual Interfaces**: Use Zod inference for all data-related types.
+---
+
+## 2. Component & logic rules
+
+- **Data fetching**: Import React Query hooks **only** from `src/services/api.ts`. Do **not** use `fetch` or Axios directly inside `src/pages/*.tsx` or `src/components/*.tsx`.
+- **Business logic**: Keep pages and components thin. Heavy validation/transform pipelines tied to API contracts belong next to the API layer (inside `api.ts` or, if absolutely necessary, small helpers **imported only by `api.ts`** — still no extra folders under `src/services/` unless the user asks).
+- **Forms**: Use TanStack Form combined with Zod for form handling and validation (schemas may live in `api.ts` or be imported into `api.ts` from a single adjacent file **only if** the user approves splitting an oversized `api.ts`).
+- **10-line rule**: If non-trivial UI logic (handlers, effects, local state orchestration) in a component exceeds ~10 lines, extract a hook **in the same directory** as that component (flat `src/components/` file sibling), unless the logic is purely server-state (then it stays in `api.ts`).
+
+---
+
+## 3. Type system & naming
+
+- **Use `type`, never `interface`** for data shapes and props.
+- **Do not use TypeScript `enum`**: use literal unions or `as const` objects.
+- **Zod** is the single source of truth for validated API/form shapes; infer TS types with `z.infer<typeof schema>`.
+- **Naming**: PascalCase for `src/pages/` and `src/components/` React files; camelCase for variables/functions; **kebab-case** for `src/e2e/*.spec.ts`.
+
+---
+
+## 4. Styling & UI (shadcn/ui & Tailwind)
+
+- Style with **Tailwind CSS**.
+- Add UI via **shadcn/ui** using the project’s package runner, e.g. `pnpm dlx shadcn@latest add <component>` (or `npx` / `bunx` per repo).
+- Prefer theme tokens and shared CSS variables over one-off raw colors.
+
+---
+
+## 5. Implementation policy (tickets)
+
+- When a ticket asks to **create a component**, place it under **`src/components/`** using the names from the map when applicable (`ProductCard`, `StockBadge`, movement UI as `MovementForm.tsx`).
+- When a ticket asks for a **page**, place it under **`src/pages/`** (`ProductList.tsx`, `MovementForm.tsx`).
+- **Do not** introduce `app/features/`, nested feature trees, or per-entity `services/` folders for new work.
+
+---
+
+## 6. Prohibitions
+
+- **NO barrel files**: no `index.ts` / `index.tsx` re-export aggregators.
+- **NO manual `interface`** for API/domain shapes (use Zod + `type`).
+- **NO server hooks outside `src/services/api.ts`** (no `useQuery` / `useMutation` in pages/components).

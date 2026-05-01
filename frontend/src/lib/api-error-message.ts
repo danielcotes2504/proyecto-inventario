@@ -1,4 +1,4 @@
-import { HttpError } from '#/app/lib/http';
+import { HttpError } from '#/lib/http';
 
 export function getApiErrorMessage(error: unknown): string {
   if (error instanceof HttpError) {

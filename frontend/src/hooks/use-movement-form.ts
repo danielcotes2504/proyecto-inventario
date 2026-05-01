@@ -1,26 +1,51 @@
+import type { ZodIssue, ZodSafeParseResult } from 'zod';
 import { useEffect, useMemo, useRef } from 'react';
 import { useForm } from '@tanstack/react-form';
 import { toast } from 'sonner';
 
-import { getApiErrorMessage } from '#/app/lib/api-error-message';
-
-import { mapRegisterMovementToApiBody } from '../mappers/register-movement.mapper';
+import { getApiErrorMessage } from '#/lib/api-error-message';
+import type { ProductListItem } from '#/services/api';
 import {
   buildRegisterMovementSchema,
   getDefaultRegisterMovementValues,
-} from '../schemas/register-movement.schema';
+  mapRegisterMovementToApiBody,
+  useRegisterMovementMutation,
+} from '#/services/api';
 
-import type { ProductListItem } from '../schemas/product-list.schema';
+function zodIssuesToFormFields(
+  issues: ZodIssue[],
+): Partial<Record<string, string>> {
+  const fields: Partial<Record<string, string>> = {};
+  for (const issue of issues) {
+    const key = issue.path[0];
+    if (typeof key === 'string' && fields[key] === undefined) {
+      fields[key] = issue.message;
+    }
+  }
+  return fields;
+}
 
-import { validationErrorsFromZodSafeParse } from './register-movement-form-validate';
-import { useRegisterMovementMutation } from './use-register-movement-mutation';
+function validationErrorsFromZodSafeParse<T>(
+  result: ZodSafeParseResult<T>,
+): { fields: Partial<Record<string, string>> } | undefined {
+  if (result.success) {
+    return undefined;
+  }
+  return { fields: zodIssuesToFormFields(result.error.issues) };
+}
 
-export function useRegisterMovementForm(
+type UseMovementFormOptions = {
+  dialogOpen: boolean;
+  resetWhenClosed?: boolean;
+  onRegistered?: () => void;
+};
+
+export function useMovementForm(
   products: ProductListItem[],
-  dialogOpen: boolean,
-  onRegistered?: () => void,
+  options: UseMovementFormOptions,
 ) {
   const mutation = useRegisterMovementMutation();
+  const resetWhenClosed = options.resetWhenClosed ?? true;
 
   const schema = useMemo(
     () =>
@@ -50,7 +75,7 @@ export function useRegisterMovementForm(
         await mutation.mutateAsync(mapRegisterMovementToApiBody(parsed.data));
         toast.success('Listo: el movimiento quedó registrado.');
         form.reset();
-        onRegistered?.();
+        options.onRegistered?.();
       } catch (error: unknown) {
         toast.error(getApiErrorMessage(error));
       }
@@ -58,10 +83,13 @@ export function useRegisterMovementForm(
   });
 
   useEffect(() => {
-    if (!dialogOpen) {
+    if (resetWhenClosed && !options.dialogOpen) {
       form.reset();
     }
-  }, [dialogOpen, form]);
+  }, [options.dialogOpen, resetWhenClosed, form]);
 
   return { form, isPending: mutation.isPending };
 }
+
+export type MovementFormInstance = ReturnType<typeof useMovementForm>;
+export type MovementFormApi = MovementFormInstance['form'];

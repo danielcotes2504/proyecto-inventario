@@ -1,6 +1,6 @@
 import { Badge } from '#/components/ui/badge';
 
-import { isLowStock } from '#/app/lib/stock-m8';
+import { isLowStock } from '#/lib/stock-m8';
 
 type StockBadgeProps = {
   stockActual: number;
