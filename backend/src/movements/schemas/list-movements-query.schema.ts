@@ -3,7 +3,7 @@ import { z } from 'zod';
 import {
   MOVEMENT_TYPE,
   type MovementType,
-} from '../../database/domain/inventory-domain';
+} from '../../common/domain/inventory-domain';
 
 const typeLiterals = [
   MOVEMENT_TYPE.IN,

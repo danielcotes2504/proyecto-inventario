@@ -5,7 +5,7 @@ import {
   MOVEMENT_TYPE,
   type MovementReason,
   type MovementType,
-} from '../../database/domain/inventory-domain';
+} from '../../common/domain/inventory-domain';
 
 const typeLiterals = [
   MOVEMENT_TYPE.IN,

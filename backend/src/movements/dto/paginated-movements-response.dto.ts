@@ -1,6 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 
-import { Movement } from '../../database/entities/movement.entity';
+import { Movement } from '../entities/movement.entity';
 
 export class MovementsPageMetaDto {
   @ApiProperty({

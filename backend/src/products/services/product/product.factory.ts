@@ -5,8 +5,8 @@ import {
   buildMovementStockBalanceSubQuerySql,
   STOCK_MOVEMENT_QUERY_PARAMS,
 } from '../../../database/queries/movement-stock-balance.subquery';
-import { Movement } from '../../../database/entities/movement.entity';
-import { Product } from '../../../database/entities/product.entity';
+import { Movement } from '../../../movements/entities/movement.entity';
+import { Product } from '../../entities/product.entity';
 import type { InventoryAlertItem } from '../../../inventory/types/inventory-alert.item';
 import type { CreateProductBody } from '../../schemas/create-product.schema';
 import type { UpdateProductBody } from '../../schemas/update-product.schema';

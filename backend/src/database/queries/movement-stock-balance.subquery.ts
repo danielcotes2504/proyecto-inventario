@@ -1,7 +1,7 @@
 import type { DataSource } from 'typeorm';
 
-import { MOVEMENT_TYPE } from '../domain/inventory-domain';
-import { Movement } from '../entities/movement.entity';
+import { MOVEMENT_TYPE } from '../../common/domain/inventory-domain';
+import { Movement } from '../../movements/entities/movement.entity';
 
 /** Bound parameters required alongside SQL returned by {@link buildMovementStockBalanceSubQuerySql}. */
 export const STOCK_MOVEMENT_QUERY_PARAMS = {

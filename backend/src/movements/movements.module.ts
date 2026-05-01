@@ -1,8 +1,8 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
-import { Movement } from '../database/entities/movement.entity';
-import { Product } from '../database/entities/product.entity';
+import { Movement } from './entities/movement.entity';
+import { Product } from '../products/entities/product.entity';
 import { MovementsController } from './movements.controller';
 import { MovementsService } from './movements.service';
 

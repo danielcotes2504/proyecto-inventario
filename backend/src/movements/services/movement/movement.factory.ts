@@ -1,9 +1,9 @@
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 import type { DataSource, EntityManager, Repository } from 'typeorm';
 
-import { MOVEMENT_TYPE } from '../../../database/domain/inventory-domain';
-import { Movement } from '../../../database/entities/movement.entity';
-import { Product } from '../../../database/entities/product.entity';
+import { MOVEMENT_TYPE } from '../../../common/domain/inventory-domain';
+import { Movement } from '../../entities/movement.entity';
+import { Product } from '../../../products/entities/product.entity';
 import type { CreateMovementBody } from '../../schemas/create-movement.schema';
 import type { ListMovementsQuery } from '../../schemas/list-movements-query.schema';
 

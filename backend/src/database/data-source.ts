@@ -4,8 +4,8 @@ import { config } from 'dotenv';
 import { join } from 'path';
 import { DataSource } from 'typeorm';
 
-import { Movement } from './entities/movement.entity';
-import { Product } from './entities/product.entity';
+import { Movement } from '../movements/entities/movement.entity';
+import { Product } from '../products/entities/product.entity';
 
 config({ path: join(__dirname, '../../.env') });
 

@@ -4,7 +4,7 @@ import {
   MOVEMENT_REASON,
   MOVEMENT_TYPE,
   PRODUCT_UNIT,
-} from '../../database/domain/inventory-domain';
+} from '../../common/domain/inventory-domain';
 
 /** Minimal linked product for read-only context (T-011). */
 export class MovementProductSummaryDto {

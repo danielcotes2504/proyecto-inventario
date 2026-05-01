@@ -14,8 +14,8 @@ import {
   MOVEMENT_TYPE,
   type MovementReason,
   type MovementType,
-} from '../domain/inventory-domain';
-import { Product } from './product.entity';
+} from '../../common/domain/inventory-domain';
+import { Product } from '../../products/entities/product.entity';
 
 @Entity('movements')
 @Index('IDX_movements_created_at', ['createdAt'])

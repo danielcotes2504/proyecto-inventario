@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
 import type { DataSource, Repository } from 'typeorm';
 
-import { Product } from '../database/entities/product.entity';
+import { Product } from './entities/product.entity';
 import type { InventoryProductDetailDto } from '../inventory/dto/inventory-product-detail.dto';
 import type { InventoryAlertItem } from '../inventory/types/inventory-alert.item';
 import type { CreateProductBody } from './schemas/create-product.schema';

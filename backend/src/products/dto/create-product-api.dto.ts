@@ -3,7 +3,7 @@ import { ApiProperty } from '@nestjs/swagger';
 import {
   PRODUCT_STATUS,
   PRODUCT_UNIT,
-} from '../../database/domain/inventory-domain';
+} from '../../common/domain/inventory-domain';
 
 /**
  * OpenAPI-only shape for `POST /products`. Runtime validation remains Zod (`create-product.schema`).

@@ -3,7 +3,7 @@ import { ApiProperty } from '@nestjs/swagger';
 import {
   MOVEMENT_REASON,
   MOVEMENT_TYPE,
-} from '../../database/domain/inventory-domain';
+} from '../../common/domain/inventory-domain';
 
 export class CreateMovementApiDto {
   @ApiProperty({

@@ -3,7 +3,7 @@ import { ApiProperty } from '@nestjs/swagger';
 import {
   PRODUCT_STATUS,
   PRODUCT_UNIT,
-} from '../../database/domain/inventory-domain';
+} from '../../common/domain/inventory-domain';
 
 /**
  * T-013 — `GET /inventory/:productId`: catalog subset plus aggregated stock (same as `GET /products/:id`)

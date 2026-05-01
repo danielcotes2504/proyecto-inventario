@@ -2,7 +2,7 @@ import { ConflictException, NotFoundException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { getDataSourceToken, getRepositoryToken } from '@nestjs/typeorm';
 
-import { Product } from '../database/entities/product.entity';
+import { Product } from './entities/product.entity';
 import { createProductBodySchema } from './schemas/create-product.schema';
 import { updateProductBodySchema } from './schemas/update-product.schema';
 import { ProductsService } from './products.service';

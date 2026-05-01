@@ -252,3 +252,54 @@ Implement T-013: @tickets.md (144-153)  /nestjs-best-practices
 ## CORS
 
 Solve the issues in the @backend for the CORS policy
+
+---
+
+## Flujo · Actualizar reglas Cursor y estructura del `backend/` (secuencia posterior a los prompts anteriores)
+
+### Paso A — Cursor Rules (arquitectura modular NestJS)
+
+# Role: Senior Backend Architect
+# Task: BACKEND ARCHITECTURE UPDATE - MANDATORY MODULAR STRUCTURE
+
+Please update the backend development rules to follow this EXACT NestJS modular structure. All files must remain within their designated domain folders.
+
+## 1. Mandatory Folder & File Map
+The backend MUST adhere to this organization without exceptions:
+
+backend/ (NestJS)
+└── src
+    ├── products/               # Product Domain
+    │   ├── dto/                # Product DTOs (Zod-based)
+    │   ├── entities/           # Product Entities (TypeORM)
+    │   ├── products.controller.ts
+    │   └── products.service.ts
+    ├── movements/              # Inventory Movements Domain
+    │   ├── dto/
+    │   ├── entities/
+    │   ├── movements.controller.ts
+    │   └── movements.service.ts
+    ├── inventory/              # Analytical & Global Inventory Logic
+    │   ├── inventory.controller.ts
+    │   └── inventory.service.ts
+    ├── common/                 # Shared Utilities
+    │   ├── pipes/
+    │   └── guards/
+    └── app.module.ts           # Root Module
+
+## 2. Implementation Rules
+- **Domain Isolation**: Product logic goes in `products/`, movement logic goes in `movements/`.
+- **Inventory Module**: Use the `inventory/` module specifically for cross-domain features like the Alerts (T-005) or global stock summaries that require data from both products and movements.
+- **Naming Convention**: All filenames must be kebab-case (e.g., `products.controller.ts`).
+- **DTOs & Entities**: Must stay inside their respective domain folders. DO NOT create a global `entities/` folder at the root of `src`.
+
+## 3. Strict Constraints
+- NO "feature" folders outside of this map.
+- If a new service is needed, it must be evaluated if it belongs to an existing module or requires a new domain module.
+- Maintain the Factory pattern within each service as per previous .cursorrules.
+
+**Confirm that you have indexed this backend map and are ready to proceed with T-004 and T-005 using these specific paths.**
+
+### Paso B — Alinear el código con las reglas
+
+Por favor, con base a las nuevas cursor rules añadidas en el backend, actualiza la estructura del `@backend/`.

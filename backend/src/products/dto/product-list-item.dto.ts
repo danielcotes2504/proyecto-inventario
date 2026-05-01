@@ -3,7 +3,7 @@ import { ApiProperty } from '@nestjs/swagger';
 import {
   PRODUCT_STATUS,
   PRODUCT_UNIT,
-} from '../../database/domain/inventory-domain';
+} from '../../common/domain/inventory-domain';
 
 /**
  * OpenAPI shape for `GET /products`, `GET /products/:id`, and `PATCH /products/:id` response — persisted fields plus aggregated `stock_actual`.

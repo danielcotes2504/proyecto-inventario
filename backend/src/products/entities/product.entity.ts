@@ -14,8 +14,8 @@ import {
   PRODUCT_UNIT,
   type ProductStatus,
   type ProductUnit,
-} from '../domain/inventory-domain';
-import { Movement } from './movement.entity';
+} from '../../common/domain/inventory-domain';
+import { Movement } from '../../movements/entities/movement.entity';
 
 @Entity('products')
 @Index('IDX_products_name', ['name'])

@@ -5,7 +5,7 @@ import {
   PRODUCT_UNIT,
   type ProductStatus,
   type ProductUnit,
-} from '../../database/domain/inventory-domain';
+} from '../../common/domain/inventory-domain';
 
 const unitLiterals = [
   PRODUCT_UNIT.UNIDADES,

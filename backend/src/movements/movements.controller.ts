@@ -22,7 +22,7 @@ import {
 } from '@nestjs/swagger';
 
 import { ZodValidationPipe } from '../common/pipes/zod-validation.pipe';
-import { Movement } from '../database/entities/movement.entity';
+import { Movement } from './entities/movement.entity';
 import { CreateMovementApiDto } from './dto/create-movement-api.dto';
 import { MovementDetailResponseDto } from './dto/movement-detail-response.dto';
 import { PaginatedMovementsResponseDto } from './dto/paginated-movements-response.dto';

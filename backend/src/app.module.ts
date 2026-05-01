@@ -4,8 +4,8 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { Movement } from './database/entities/movement.entity';
-import { Product } from './database/entities/product.entity';
+import { Movement } from './movements/entities/movement.entity';
+import { Product } from './products/entities/product.entity';
 import { InventoryModule } from './inventory/inventory.module';
 import { MovementsModule } from './movements/movements.module';
 import { ProductsModule } from './products/products.module';

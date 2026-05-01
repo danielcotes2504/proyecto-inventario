@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
 import type { DataSource, Repository } from 'typeorm';
 
-import { Movement } from '../database/entities/movement.entity';
+import { Movement } from './entities/movement.entity';
 import type { CreateMovementBody } from './schemas/create-movement.schema';
 import type { ListMovementsQuery } from './schemas/list-movements-query.schema';
 import {

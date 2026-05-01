@@ -23,7 +23,7 @@ import {
 } from '@nestjs/swagger';
 
 import { ZodValidationPipe } from '../common/pipes/zod-validation.pipe';
-import { Product } from '../database/entities/product.entity';
+import { Product } from './entities/product.entity';
 import { CreateProductApiDto } from './dto/create-product-api.dto';
 import { ProductListItemDto } from './dto/product-list-item.dto';
 import { UpdateProductApiDto } from './dto/update-product-api.dto';

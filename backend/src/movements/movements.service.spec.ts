@@ -6,8 +6,8 @@ import {
   MOVEMENT_REASON,
   MOVEMENT_TYPE,
   PRODUCT_UNIT,
-} from '../database/domain/inventory-domain';
-import { Movement } from '../database/entities/movement.entity';
+} from '../common/domain/inventory-domain';
+import { Movement } from './entities/movement.entity';
 import { createMovementBodySchema } from './schemas/create-movement.schema';
 import { listMovementsQuerySchema } from './schemas/list-movements-query.schema';
 import { MovementsService } from './movements.service';
