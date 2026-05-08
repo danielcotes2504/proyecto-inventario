@@ -1,0 +1,74 @@
+---
+paths:
+  - "backend/**/*"
+---
+
+# Backend Architecture — mandatory modular structure (NestJS)
+
+Follow **`.cursor/skills/backend/nestjs-best-practices/`** for NestJS patterns and depth; **this rule overrides folder layout** wherever they differ. Use skills under **`.cursor/skills/backend/`** when implementing or reviewing backend code.
+
+---
+
+## 1. Mandatory folder & file map
+
+The backend **MUST** follow this organization. **No domain logic** outside these domains except the narrow bootstrap exceptions below.
+
+```text
+backend/ (NestJS)
+└── src
+    ├── products/               # Product domain
+    │   ├── dto/                # Product DTOs (Zod-based / validated)
+    │   ├── entities/           # Product TypeORM entities
+    │   ├── products.controller.ts
+    │   ├── products.service.ts
+    │   └── products.module.ts  # Nest module (required to wire the domain)
+    ├── movements/              # Inventory movements domain
+    │   ├── dto/
+    │   ├── entities/
+    │   ├── movements.controller.ts
+    │   ├── movements.service.ts
+    │   └── movements.module.ts
+    ├── inventory/              # Cross-domain / analytical inventory
+    │   ├── dto/
+    │   ├── inventory.controller.ts
+    │   ├── inventory.service.ts
+    │   └── inventory.module.ts
+    ├── common/                 # Shared utilities only
+    │   ├── pipes/
+    │   └── guards/
+    ├── database/               # Bootstrap only (see exception below)
+    └── app.module.ts           # Root module
+```
+
+**Exception — `src/database/`:** Use **only** for TypeORM bootstrap that is **not** domain logic: e.g. `data-source.ts`, `migrations/`, and thin shared query fragments consumed by services. **Do not** park domain entities under a single global `src/entities/` root; **product** and **movement** entities belong under **`products/entities/`** and **`movements/entities/`** respectively.
+
+**Root shell:** `main.ts`, `app.controller.ts` / `app.service.ts` only if the project already uses them at `src/` root; do not grow new “feature” trees outside the map.
+
+---
+
+## 2. Implementation rules
+
+- **Domain isolation:** Product behavior lives in `products/`; movement CRUD / listing in `movements/`.
+- **`inventory/` module:** Use for **cross-domain** concerns only — e.g. alerts (T-005), global stock summaries, or views that combine product + movement data.
+- **Naming:** Filenames **`kebab-case.ts`** (e.g. `products.controller.ts`, `create-product-api.dto.ts`).
+- **DTOs & entities:** Stay inside the **owning** domain folder (`<domain>/dto/`, `<domain>/entities/`). **Do not** introduce a global `src/entities/` for domain models.
+- **Services:** Keep the **factory pattern** inside each domain service as established in prior project conventions (construct payloads / rows via factories, not ad hoc objects scattered in controllers).
+
+---
+
+## 3. Strict constraints
+
+- **NO** extra “feature” or parallel trees outside this map (no `src/features/`, etc.).
+- **New services:** Decide whether they belong to **products**, **movements**, **inventory**, or justify a **new top-level domain module** under `src/` (with the same internal layout: `dto/`, `entities/` if persisted, `*.controller.ts`, `*.service.ts`, `*.module.ts`).
+- **Barrels:** Do not add `index.ts` re-export aggregators unless the user explicitly asks.
+
+---
+
+## 4. Prohibitions
+
+- **NO** global domain `entities/` at `src/` root.
+- **NO** moving movement or product rules into the wrong module to “save time”; use `inventory/` only when the behavior is genuinely cross-domain.
+
+---
+
+**Indexed:** Cursor must treat this map as the target layout for **T-004**, **T-005**, and subsequent backend work unless the user changes it explicitly.
