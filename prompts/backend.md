@@ -355,3 +355,39 @@ Comentario `T-013` en `products.service.ts` violaba la regla del proyecto ("no r
 - `inventory/inventory.module.ts` — registra `InventoryService`
 - `inventory/inventory.controller.ts` — inyecta `InventoryService`
 - `inventory/types/inventory-alert.item.ts` — **eliminado** (fix #2)
+
+
+---
+
+## Code Review · `movements.service.ts`
+
+### Prompt
+
+Actúa como un senior developer revisando este código @backend/src/movements/movements.service.ts. Identifica problemas de mantenibilidad, manejo de errores, lógica incorrecta y oportunidades de refactoring. Se específico y muestra como corregir cada problema encontrado.
+
+### Problemas identificados y resultado
+
+**1. Dead ternary en `getCurrentStock` (Baja)**
+`typeof raw === 'string' ? Number(raw) : Number(raw)` — copia exacta del bug de `parseAggregateNumber` del producto factory. Ambas ramas idénticas.
+
+→ Simplificado a `Number(raw)`.
+
+**2. `BadRequestException` para stock insuficiente (Media)**
+HTTP 400 es para input malformado. Stock insuficiente es una violación de regla de negocio con payload válido — el código correcto es 422 (`UnprocessableEntity`).
+
+→ `BadRequestException` reemplazado por `UnprocessableEntityException`. Controller actualizado: el `@ApiBadRequestResponse` combinado (Zod + stock) se separó en `@ApiBadRequestResponse` (solo Zod, 400) y `@ApiUnprocessableEntityResponse` (stock insuficiente, 422).
+
+**3. Acceso sin guarda a `movement.product` (Baja/defensivo)**
+Si por cualquier razón la relación viene `null` (constraint violado en BD, entorno de test), `product.id` lanza un `TypeError` genérico sin contexto.
+
+→ Añadida guarda explícita que lanza `NotFoundException` con mensaje descriptivo antes del acceso a los campos.
+
+**4. Comentarios con referencia a task IDs (Baja)**
+Bloques JSDoc `T-011` y `T-010` en el factory violan la regla del proyecto.
+
+→ Eliminados.
+
+### Archivos modificados
+- `movements/services/movement/movement.factory.ts` — fixes #1 #2 #3 #4
+- `movements/movements.controller.ts` — fix #2 (Swagger separado: 400 Zod / 422 stock)
+- `movements/movements.service.spec.ts` — test actualizado a `UnprocessableEntityException`

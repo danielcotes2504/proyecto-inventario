@@ -1,4 +1,4 @@
-import { BadRequestException, NotFoundException } from '@nestjs/common';
+import { NotFoundException, UnprocessableEntityException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { getDataSourceToken, getRepositoryToken } from '@nestjs/typeorm';
 
@@ -130,7 +130,7 @@ describe('MovementsService', () => {
     expect(mockManager.save).toHaveBeenCalled();
   });
 
-  it('throws BadRequestException when OUT exceeds stock', async () => {
+  it('throws UnprocessableEntityException when OUT exceeds stock', async () => {
     mockManager.findOne.mockResolvedValue({ id: productId });
     stockQueryBuilder.getRawOne.mockResolvedValue({ stock: '3' });
 
@@ -142,10 +142,10 @@ describe('MovementsService', () => {
         reason: MOVEMENT_REASON.VENTA,
         date: new Date('2026-04-01'),
       });
-      fail('expected BadRequestException');
+      fail('expected UnprocessableEntityException');
     } catch (err) {
-      expect(err).toBeInstanceOf(BadRequestException);
-      expect((err as BadRequestException).getResponse()).toEqual(
+      expect(err).toBeInstanceOf(UnprocessableEntityException);
+      expect((err as UnprocessableEntityException).getResponse()).toEqual(
         expect.objectContaining({
           message: 'Insufficient stock for this operation.',
         }),

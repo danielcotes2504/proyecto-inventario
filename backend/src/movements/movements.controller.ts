@@ -19,6 +19,7 @@ import {
   ApiParam,
   ApiQuery,
   ApiTags,
+  ApiUnprocessableEntityResponse,
 } from '@nestjs/swagger';
 
 import { ZodValidationPipe } from '../common/pipes/zod-validation.pipe';
@@ -151,30 +152,27 @@ export class MovementsController {
     type: Movement,
   })
   @ApiBadRequestResponse({
-    description: 'Invalid input or insufficient stock',
+    description: 'Validation failed (Zod)',
     schema: {
-      oneOf: [
-        {
-          description: 'Zod validation',
-          type: 'object',
-          properties: {
-            message: { type: 'string', example: 'Validation failed' },
-            errors: { type: 'object' },
-          },
+      type: 'object',
+      properties: {
+        message: { type: 'string', example: 'Validation failed' },
+        errors: { type: 'object' },
+      },
+    },
+  })
+  @ApiUnprocessableEntityResponse({
+    description: 'Insufficient stock for OUT movement',
+    schema: {
+      type: 'object',
+      properties: {
+        statusCode: { type: 'number', example: 422 },
+        message: {
+          type: 'string',
+          example: 'Insufficient stock for this operation.',
         },
-        {
-          description: 'Insufficient stock (OUT)',
-          type: 'object',
-          properties: {
-            statusCode: { type: 'number', example: 400 },
-            message: {
-              type: 'string',
-              example: 'Insufficient stock for this operation.',
-            },
-            error: { type: 'string', example: 'Bad Request' },
-          },
-        },
-      ],
+        error: { type: 'string', example: 'Unprocessable Entity' },
+      },
     },
   })
   @ApiNotFoundResponse({

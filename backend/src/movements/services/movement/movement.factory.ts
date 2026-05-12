@@ -1,4 +1,4 @@
-import { BadRequestException, NotFoundException } from '@nestjs/common';
+import { NotFoundException, UnprocessableEntityException } from '@nestjs/common';
 import type { DataSource, EntityManager, Repository } from 'typeorm';
 
 import { MOVEMENT_TYPE } from '../../../common/domain/inventory-domain';
@@ -57,15 +57,12 @@ async function getCurrentStock(
     .getRawOne<{ stock: string | number | null }>();
 
   const raw = row?.stock ?? 0;
-  const n = typeof raw === 'string' ? Number(raw) : Number(raw);
+  const n = Number(raw);
   return Number.isFinite(n) ? n : 0;
 }
 
 export function createMovementService(deps: MovementServiceDeps) {
   return {
-    /**
-     * T-011 — Single movement by id; 404 when missing. Loads minimal product snapshot.
-     */
     async getMovementById(id: string): Promise<MovementDetail> {
       const movement = await deps.movementRepository.findOne({
         where: { id },
@@ -77,6 +74,10 @@ export function createMovementService(deps: MovementServiceDeps) {
       }
 
       const { product } = movement;
+
+      if (!product) {
+        throw new NotFoundException(`Product for movement "${id}" not found`);
+      }
 
       return {
         id: movement.id,
@@ -95,10 +96,6 @@ export function createMovementService(deps: MovementServiceDeps) {
       };
     },
 
-    /**
-     * T-010 — Paginated list; default order `createdAt` DESC, then `id` DESC.
-     * Filters applied in SQL (no full-table load in memory).
-     */
     async listMovements(
       query: ListMovementsQuery,
     ): Promise<PaginatedMovements> {
@@ -153,7 +150,7 @@ export function createMovementService(deps: MovementServiceDeps) {
             payload.productId,
           );
           if (payload.quantity > currentStock) {
-            throw new BadRequestException(
+            throw new UnprocessableEntityException(
               'Insufficient stock for this operation.',
             );
           }
