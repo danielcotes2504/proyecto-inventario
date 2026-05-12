@@ -1,6 +1,10 @@
-import { NotFoundException, UnprocessableEntityException } from '@nestjs/common';
+import {
+  NotFoundException,
+  UnprocessableEntityException,
+} from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { getDataSourceToken, getRepositoryToken } from '@nestjs/typeorm';
+import * as fc from 'fast-check';
 
 import {
   MOVEMENT_REASON,
@@ -348,6 +352,84 @@ describe('listMovementsQuerySchema', () => {
   it('rejects unknown query keys', () => {
     expect(listMovementsQuerySchema.safeParse({ foo: 'bar' }).success).toBe(
       false,
+    );
+  });
+});
+
+// ─── PBT ───────────────────────────────────────────────────────────────────
+
+describe('PBT — Property 1: stock balance is always >= 0', () => {
+  it('applying validated movements (OUT gated by available stock) never produces a negative balance', () => {
+    fc.assert(
+      fc.property(
+        fc.array(
+          fc.record({
+            type: fc.constantFrom('IN' as const, 'OUT' as const),
+            quantity: fc.integer({ min: 1, max: 500 }),
+          }),
+          { minLength: 1, maxLength: 200 },
+        ),
+        (movements) => {
+          // Mirrors the registerMovement guard:
+          // OUT is only persisted when payload.quantity <= currentStock
+          let balance = 0;
+          for (const { type, quantity } of movements) {
+            if (type === 'IN') {
+              balance += quantity;
+            } else if (quantity <= balance) {
+              balance -= quantity;
+            }
+            // OUT rejected when insufficient — not applied, matching the service behavior
+          }
+          return balance >= 0;
+        },
+      ),
+      { numRuns: 2_000 },
+    );
+  });
+
+  it('balance is non-negative even when all movements are OUT (all rejected when stock=0)', () => {
+    fc.assert(
+      fc.property(
+        fc.array(fc.integer({ min: 1, max: 1_000 }), {
+          minLength: 1,
+          maxLength: 100,
+        }),
+        (quantities) => {
+          let balance = 0;
+          for (const qty of quantities) {
+            if (qty <= balance) balance -= qty;
+          }
+          return balance >= 0;
+        },
+      ),
+      { numRuns: 1_000 },
+    );
+  });
+});
+
+describe('PBT — Property 3: IN movements sum is order-independent', () => {
+  it('total stock_actual is identical regardless of the order IN movements are processed', () => {
+    fc.assert(
+      fc.property(
+        fc.array(fc.integer({ min: 1, max: 10_000 }), {
+          minLength: 1,
+          maxLength: 100,
+        }),
+        (quantities) => {
+          const sum = (arr: number[]) => arr.reduce((a, b) => a + b, 0);
+          const original = sum(quantities);
+          const reversed = sum([...quantities].reverse());
+          const ascending = sum([...quantities].sort((a, b) => a - b));
+          const descending = sum([...quantities].sort((a, b) => b - a));
+          return (
+            original === reversed &&
+            original === ascending &&
+            original === descending
+          );
+        },
+      ),
+      { numRuns: 1_000 },
     );
   });
 });

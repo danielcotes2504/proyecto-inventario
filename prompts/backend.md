@@ -391,3 +391,68 @@ Bloques JSDoc `T-011` y `T-010` en el factory violan la regla del proyecto.
 - `movements/services/movement/movement.factory.ts` — fixes #1 #2 #3 #4
 - `movements/movements.controller.ts` — fix #2 (Swagger separado: 400 Zod / 422 stock)
 - `movements/movements.service.spec.ts` — test actualizado a `UnprocessableEntityException`
+
+
+---
+
+## Suite de tests unitarios + Property-Based Testing (fast-check)
+
+### Prompt
+
+```
+# Role: Senior QA Automation Engineer
+# Task: Unit Tests + Property-Based Testing suite for backend services
+
+Implement a comprehensive test suite for the NestJS backend following these requirements:
+
+## 1. Unit Tests — InventoryService
+Create `backend/src/inventory/inventory.service.spec.ts` covering:
+- `getProductDetail`: boundary case where stock_actual === stock_minimo sets low_stock=true (M8 inclusive rule)
+- `getProductDetail`: stock below minimum → low_stock=true
+- `getProductDetail`: stock above minimum → low_stock=false
+- `getProductDetail`: full DTO mapping (all fields present)
+- `getProductDetail`: propagates NotFoundException when product not found
+- `getPositions`: delegates entirely to productsService.findInventoryPositions
+- `getAlerts`: delegates entirely to productsService.findInventoryAlerts
+
+## 2. Property-Based Testing — fast-check
+Install fast-check and add PBT properties to existing specs:
+
+**Property 1 (movements.service.spec.ts):**
+Stock balance is always >= 0 when OUT movements are gated by available stock.
+- Corollary: all-OUT array starting at balance=0 still stays non-negative.
+
+**Property 2 (inventory.service.spec.ts):**
+M8 consistency: the JS low_stock flag and the DB WHERE clause use identical criteria,
+so for any arbitrary stock values the sets they produce are always equal.
+- Corollary: zero stock is always a low-stock alert for any non-negative minimum.
+
+**Property 3 (movements.service.spec.ts):**
+IN movement sum is commutative/order-independent: original, reversed, ascending, and
+descending sort all yield the same total.
+
+Use jest mocks for all NestJS dependencies; no real DB.
+```
+
+### Resultado
+
+**Instalación**
+`fast-check@^4.8.0` añadido como devDependency.
+
+**`inventory/inventory.service.spec.ts` — creado (9 tests)**
+- 5 tests unitarios para `getProductDetail` (boundary M8, below, above, full mapping, NotFoundException propagation)
+- 2 tests de delegación (`getPositions`, `getAlerts`)
+- PBT Property 2: 2_000 runs — verifica que `low_stock` JS y el WHERE SQL producen el mismo conjunto para cualquier par `(stock_actual, stock_minimo)`
+- PBT corolario: 10_000 runs — `stock_actual=0` es siempre alerta para cualquier mínimo ≥ 0
+
+**`movements/movements.service.spec.ts` — extendido**
+- PBT Property 1: 2_000 runs — balance nunca cae a negativo cuando OUT está gated por stock disponible
+- PBT corolario: 1_000 runs — array all-OUT arrancando en 0 mantiene balance ≥ 0
+- PBT Property 3: 1_000 runs — suma de entradas IN es idéntica en cualquier orden (original, reversed, sorted asc/desc)
+
+**Resultado final**: 44/44 tests passing.
+
+### Archivos modificados
+- `package.json` (backend) — `fast-check` añadido a devDependencies
+- `inventory/inventory.service.spec.ts` — **creado** (7 unit tests + 2 PBT)
+- `movements/movements.service.spec.ts` — PBT Properties 1 y 3 añadidas al final
