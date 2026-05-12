@@ -1,7 +1,13 @@
-import { NotFoundException, UnprocessableEntityException } from '@nestjs/common';
+import {
+  NotFoundException,
+  UnprocessableEntityException,
+} from '@nestjs/common';
 import type { DataSource, EntityManager, Repository } from 'typeorm';
 
-import { MOVEMENT_TYPE } from '../../../common/domain/inventory-domain';
+import {
+  MOVEMENT_TYPE,
+  PRODUCT_STATUS,
+} from '../../../common/domain/inventory-domain';
 import { Movement } from '../../entities/movement.entity';
 import { Product } from '../../../products/entities/product.entity';
 import type { CreateMovementBody } from '../../schemas/create-movement.schema';
@@ -141,6 +147,12 @@ export function createMovementService(deps: MovementServiceDeps) {
         if (!product) {
           throw new NotFoundException(
             `Product with id "${payload.productId}" not found`,
+          );
+        }
+
+        if (product.status === PRODUCT_STATUS.INACTIVO) {
+          throw new UnprocessableEntityException(
+            'Cannot register movement for an inactive product.',
           );
         }
 

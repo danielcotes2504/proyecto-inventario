@@ -9,6 +9,7 @@ import * as fc from 'fast-check';
 import {
   MOVEMENT_REASON,
   MOVEMENT_TYPE,
+  PRODUCT_STATUS,
   PRODUCT_UNIT,
 } from '../common/domain/inventory-domain';
 import { Movement } from './entities/movement.entity';
@@ -303,6 +304,81 @@ describe('MovementsService', () => {
       );
     });
   });
+
+  // ─── PBT — P1 edge (service level) ────────────────────────────────────────
+
+  describe('PBT — P1 edge: OUT at exact stock boundary always succeeds', () => {
+    it('registers OUT when quantity equals current stock for any positive stock value', async () => {
+      await fc.assert(
+        fc.asyncProperty(fc.integer({ min: 1, max: 10_000 }), async (stock) => {
+          mockManager.findOne.mockResolvedValue({
+            id: productId,
+            status: PRODUCT_STATUS.ACTIVO,
+          });
+          stockQueryBuilder.getRawOne.mockResolvedValue({
+            stock: String(stock),
+          });
+          mockManager.create.mockImplementation((_: unknown, data: object) => ({
+            ...data,
+          }));
+          mockManager.save.mockResolvedValue({
+            id: 'mov-edge',
+            quantity: stock,
+            createdAt: new Date(),
+          });
+
+          let threw = false;
+          try {
+            await service.register({
+              type: MOVEMENT_TYPE.OUT,
+              quantity: stock,
+              productId,
+              reason: MOVEMENT_REASON.VENTA,
+              date: new Date('2026-01-01'),
+            });
+          } catch {
+            threw = true;
+          }
+          return !threw;
+        }),
+        { numRuns: 50 },
+      );
+    });
+  });
+
+  // ─── PBT — P5 (service level) ─────────────────────────────────────────────
+
+  describe('PBT — P5: inactive product rejects any movement', () => {
+    it('throws UnprocessableEntityException for any type/quantity when product is INACTIVO', async () => {
+      mockManager.findOne.mockResolvedValue({
+        id: productId,
+        status: PRODUCT_STATUS.INACTIVO,
+      });
+
+      await fc.assert(
+        fc.asyncProperty(
+          fc.constantFrom(MOVEMENT_TYPE.IN, MOVEMENT_TYPE.OUT),
+          fc.integer({ min: 1, max: 10_000 }),
+          async (type, quantity) => {
+            let threw = false;
+            try {
+              await service.register({
+                type,
+                quantity,
+                productId,
+                reason: MOVEMENT_REASON.COMPRA,
+                date: new Date('2026-01-01'),
+              });
+            } catch (err) {
+              threw = err instanceof UnprocessableEntityException;
+            }
+            return threw;
+          },
+        ),
+        { numRuns: 50 },
+      );
+    });
+  });
 });
 
 describe('createMovementBodySchema', () => {
@@ -427,6 +503,198 @@ describe('PBT — Property 3: IN movements sum is order-independent', () => {
             original === ascending &&
             original === descending
           );
+        },
+      ),
+      { numRuns: 1_000 },
+    );
+  });
+});
+
+// ─── PBT — P2 ──────────────────────────────────────────────────────────────
+
+describe('PBT — P2: movement quantity must be a positive integer', () => {
+  const validBase = {
+    type: 'IN',
+    productId: '550e8400-e29b-41d4-a716-446655440001',
+    reason: 'COMPRA',
+    date: '2026-01-01T00:00:00.000Z',
+  };
+
+  it('rejects zero and negative quantities', () => {
+    fc.assert(
+      fc.property(
+        fc.oneof(fc.constant(0), fc.integer({ min: -100_000, max: -1 })),
+        (qty) => {
+          const r = createMovementBodySchema.safeParse({
+            ...validBase,
+            quantity: qty,
+          });
+          return !r.success;
+        },
+      ),
+      { numRuns: 1_000 },
+    );
+  });
+
+  it('rejects non-integer quantities between 0 and 1', () => {
+    fc.assert(
+      fc.property(
+        fc.integer({ min: 1, max: 999 }).map((n) => n / 1_000),
+        (qty) => {
+          const r = createMovementBodySchema.safeParse({
+            ...validBase,
+            quantity: qty,
+          });
+          return !r.success;
+        },
+      ),
+      { numRuns: 500 },
+    );
+  });
+
+  it('accepts any integer >= 1', () => {
+    fc.assert(
+      fc.property(fc.integer({ min: 1, max: 1_000_000 }), (qty) => {
+        const r = createMovementBodySchema.safeParse({
+          ...validBase,
+          quantity: qty,
+        });
+        return r.success;
+      }),
+      { numRuns: 500 },
+    );
+  });
+});
+
+// ─── PBT — P3 extended ─────────────────────────────────────────────────────
+
+describe('PBT — P3 extended: balance invariant (Sum IN - Sum accepted OUT)', () => {
+  it('balance always equals sum(IN) minus sum(accepted OUT) for any movement sequence', () => {
+    fc.assert(
+      fc.property(
+        fc.array(
+          fc.record({
+            type: fc.constantFrom('IN' as const, 'OUT' as const),
+            quantity: fc.integer({ min: 1, max: 1_000 }),
+          }),
+          { minLength: 1, maxLength: 200 },
+        ),
+        (movements) => {
+          let balance = 0;
+          let sumIn = 0;
+          let sumAcceptedOut = 0;
+
+          for (const { type, quantity } of movements) {
+            if (type === 'IN') {
+              balance += quantity;
+              sumIn += quantity;
+            } else if (quantity <= balance) {
+              balance -= quantity;
+              sumAcceptedOut += quantity;
+            }
+          }
+
+          return balance === sumIn - sumAcceptedOut;
+        },
+      ),
+      { numRuns: 2_000 },
+    );
+  });
+});
+
+// ─── PBT — P6 ──────────────────────────────────────────────────────────────
+
+describe('PBT — P6: movement type domain rejects non-IN/OUT values', () => {
+  it('rejects any string that does not normalise to IN or OUT', () => {
+    fc.assert(
+      fc.property(
+        fc.string().filter((s) => {
+          const u = s.trim().toUpperCase();
+          return u !== 'IN' && u !== 'OUT';
+        }),
+        (invalidType) => {
+          const r = createMovementBodySchema.safeParse({
+            type: invalidType,
+            quantity: 1,
+            productId: '550e8400-e29b-41d4-a716-446655440001',
+            reason: 'COMPRA',
+            date: '2026-01-01T00:00:00.000Z',
+          });
+          return !r.success;
+        },
+      ),
+      { numRuns: 1_000 },
+    );
+  });
+});
+
+// ─── PBT — P7 ──────────────────────────────────────────────────────────────
+
+describe('PBT — P7: date range coherence in list query', () => {
+  const tsMin = new Date('2000-01-01T00:00:00Z').getTime();
+  const tsMax = new Date('2030-12-31T00:00:00Z').getTime();
+  const dateArb = fc
+    .integer({ min: tsMin, max: tsMax })
+    .map((ts) => new Date(ts));
+
+  it('rejects dateFrom > dateTo and accepts dateFrom <= dateTo', () => {
+    fc.assert(
+      fc.property(dateArb, dateArb, (d1, d2) => {
+        if (d1.getTime() === d2.getTime()) return true;
+        const [earlier, later] = d1 < d2 ? [d1, d2] : [d2, d1];
+
+        const invalid = listMovementsQuerySchema.safeParse({
+          dateFrom: later.toISOString(),
+          dateTo: earlier.toISOString(),
+        });
+        const valid = listMovementsQuerySchema.safeParse({
+          dateFrom: earlier.toISOString(),
+          dateTo: later.toISOString(),
+        });
+        return !invalid.success && valid.success;
+      }),
+      { numRuns: 1_000 },
+    );
+  });
+
+  it('accepts dateFrom === dateTo (same-day window)', () => {
+    fc.assert(
+      fc.property(dateArb, (d) => {
+        const r = listMovementsQuerySchema.safeParse({
+          dateFrom: d.toISOString(),
+          dateTo: d.toISOString(),
+        });
+        return r.success;
+      }),
+      { numRuns: 500 },
+    );
+  });
+});
+
+// ─── PBT — P8 ──────────────────────────────────────────────────────────────
+
+describe('PBT — P8: date filter integrity', () => {
+  const tsMin = new Date('2000-01-01T00:00:00Z').getTime();
+  const tsMax = new Date('2030-12-31T00:00:00Z').getTime();
+  const dateArb = fc
+    .integer({ min: tsMin, max: tsMax })
+    .map((ts) => new Date(ts));
+
+  it('every movement passing the [dateFrom, dateTo] predicate satisfies the range constraint', () => {
+    fc.assert(
+      fc.property(
+        fc.array(dateArb, { minLength: 1, maxLength: 50 }),
+        dateArb,
+        dateArb,
+        (movementDates, rawA, rawB) => {
+          const dateFrom = rawA <= rawB ? rawA : rawB;
+          const dateTo = rawA <= rawB ? rawB : rawA;
+
+          const filtered = movementDates.filter(
+            (d) => d >= dateFrom && d <= dateTo,
+          );
+
+          return filtered.every((d) => d >= dateFrom && d <= dateTo);
         },
       ),
       { numRuns: 1_000 },

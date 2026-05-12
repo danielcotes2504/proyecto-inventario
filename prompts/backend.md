@@ -456,3 +456,42 @@ Use jest mocks for all NestJS dependencies; no real DB.
 - `package.json` (backend) — `fast-check` añadido a devDependencies
 - `inventory/inventory.service.spec.ts` — **creado** (7 unit tests + 2 PBT)
 - `movements/movements.service.spec.ts` — PBT Properties 1 y 3 añadidas al final
+
+
+---
+
+## Fix · ReferenceError en MovementsService tests
+
+### Prompt
+
+```
+# Role: Senior Backend Engineer
+# Task: Fix ReferenceError in MovementsService Tests
+
+The test for "OUT exceeds stock" is failing with a ReferenceError.
+
+## Analysis:
+- Expected: UnprocessableEntityException
+- Received: ReferenceError
+- Location: src/movements/movements.service.spec.ts:152:19
+
+## Instructions:
+1. Check 'src/movements/movements.service.ts':
+   - Ensure 'UnprocessableEntityException' is correctly imported from '@nestjs/common'.
+   - Look for any undefined variables or typos in the logic that handles stock validation.
+2. Check 'src/movements/movements.service.spec.ts':
+   - Ensure 'UnprocessableEntityException' is imported at the top of the test file.
+   - Verify that the 'expect(err).toBeInstanceOf(UnprocessableEntityException)' has access to the class definition.
+3. Fix the code and ensure 'npm test' passes all 60 tests.
+
+**Please provide the fix for the affected files.**
+```
+
+### Resultado
+
+La causa raíz era que el test referenciaba `UnprocessableEntityException` antes de que el código de producción lanzara esa excepción — el factory todavía lanzaba `BadRequestException` (ya corregido en el Code Review anterior de `movements.service.ts`). El spec también importaba `BadRequestException` en lugar de `UnprocessableEntityException`.
+
+→ El import en `movements.service.spec.ts` ya fue actualizado a `UnprocessableEntityException` como parte del code review previo. El error no se reproducía con el estado actual del código; los 60 tests pasaban sin cambios adicionales.
+
+### Archivos modificados
+- Ninguno — la corrección ya estaba aplicada desde el code review de `movements.service.ts`.

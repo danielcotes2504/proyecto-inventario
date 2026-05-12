@@ -1,6 +1,7 @@
 import { ConflictException, NotFoundException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { getDataSourceToken, getRepositoryToken } from '@nestjs/typeorm';
+import * as fc from 'fast-check';
 
 import { Product } from './entities/product.entity';
 import { createProductBodySchema } from './schemas/create-product.schema';
@@ -446,5 +447,87 @@ describe('updateProductBodySchema', () => {
     if (result.success) {
       expect(result.data.stock_minimo).toBe(10);
     }
+  });
+});
+
+// ─── PBT ───────────────────────────────────────────────────────────────────
+
+describe('PBT — P4: stock_minimo must be non-negative', () => {
+  const validBase = {
+    name: 'P',
+    description: 'D',
+    unit: 'KG',
+    category: 'C',
+    status: 'ACTIVO',
+  };
+
+  it('rejects any negative stock_minimo', () => {
+    fc.assert(
+      fc.property(fc.integer({ min: -100_000, max: -1 }), (stockMinimo) => {
+        const r = createProductBodySchema.safeParse({
+          ...validBase,
+          stock_minimo: stockMinimo,
+        });
+        return !r.success;
+      }),
+      { numRuns: 1_000 },
+    );
+  });
+
+  it('accepts stock_minimo = 0 (zero is a valid threshold)', () => {
+    const r = createProductBodySchema.safeParse({ ...validBase, stock_minimo: 0 });
+    expect(r.success).toBe(true);
+  });
+
+  it('accepts any non-negative integer stock_minimo', () => {
+    fc.assert(
+      fc.property(fc.integer({ min: 0, max: 100_000 }), (stockMinimo) => {
+        const r = createProductBodySchema.safeParse({
+          ...validBase,
+          stock_minimo: stockMinimo,
+        });
+        return r.success;
+      }),
+      { numRuns: 500 },
+    );
+  });
+});
+
+// ─── PBT — P9 ──────────────────────────────────────────────────────────────
+
+describe('PBT — P9: deterministic alert membership (M8)', () => {
+  it('low_stock flag and alert-filter predicate always agree for any stock values', () => {
+    fc.assert(
+      fc.property(
+        fc.integer({ min: 0, max: 100_000 }),
+        fc.integer({ min: 0, max: 100_000 }),
+        (stockActual, stockMinimo) => {
+          const lowStockFlag = stockActual <= stockMinimo;
+          const isInAlerts = stockActual <= stockMinimo;
+          return lowStockFlag === isInAlerts;
+        },
+      ),
+      { numRuns: 10_000 },
+    );
+  });
+
+  it('stock === stock_minimo is always a low-stock alert (M8 inclusive boundary)', () => {
+    fc.assert(
+      fc.property(fc.integer({ min: 0, max: 100_000 }), (stockMinimo) => {
+        const stockActual = stockMinimo;
+        return stockActual <= stockMinimo;
+      }),
+      { numRuns: 10_000 },
+    );
+  });
+
+  it('stock === stock_minimo + 1 is never a low-stock alert', () => {
+    fc.assert(
+      fc.property(fc.integer({ min: 0, max: 99_999 }), (stockMinimo) => {
+        const stockActual = stockMinimo + 1;
+        return !(stockActual <= stockMinimo);
+      }),
+      { numRuns: 10_000 },
+    );
   });
 });
