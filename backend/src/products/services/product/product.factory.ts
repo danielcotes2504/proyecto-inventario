@@ -7,7 +7,6 @@ import {
 } from '../../../database/queries/movement-stock-balance.subquery';
 import { Movement } from '../../../movements/entities/movement.entity';
 import { Product } from '../../entities/product.entity';
-import type { InventoryAlertItem } from '../../../inventory/types/inventory-alert.item';
 import type { CreateProductBody } from '../../schemas/create-product.schema';
 import type { UpdateProductBody } from '../../schemas/update-product.schema';
 
@@ -27,13 +26,20 @@ export type InventoryPositionItem = {
   low_stock: boolean;
 };
 
+export type InventoryAlertItem = {
+  id: string;
+  name: string;
+  stock_actual: number;
+  stock_minimo: number;
+};
+
 function parseAggregateNumber(
   value: string | number | null | undefined,
 ): number {
   if (value == null) {
     return 0;
   }
-  const n = typeof value === 'string' ? Number(value) : Number(value);
+  const n = Number(value);
   return Number.isFinite(n) ? n : 0;
 }
 
@@ -155,21 +161,17 @@ export function createProductService(deps: ProductServiceDeps) {
       };
     },
 
-    /**
-     * T-009 — Partial update; response includes `stock_actual` (same as T-008).
-     */
     async patchProduct(
       productId: string,
       payload: UpdateProductBody,
     ): Promise<ProductWithStockActual> {
-      const product = await deps.productRepository.findOne({
-        where: { id: productId },
-      });
-      if (!product) {
+      const result = await deps.productRepository.update(
+        { id: productId },
+        payload,
+      );
+      if (result.affected === 0) {
         throw new NotFoundException(`Product with id "${productId}" not found`);
       }
-      Object.assign(product, payload);
-      await deps.productRepository.save(product);
       return service.findOneWithStock(productId);
     },
 

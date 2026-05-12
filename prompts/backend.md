@@ -303,3 +303,55 @@ backend/ (NestJS)
 ### Paso B — Alinear el código con las reglas
 
 Por favor, con base a las nuevas cursor rules añadidas en el backend, actualiza la estructura del `@backend/`.
+
+
+---
+
+## Code Review · `products.service.ts` + refactor arquitectónico
+
+### Prompt
+
+Actúa como un senior developer revisando este código @backend/src/products/products.service.ts. Identifica
+problemas de mantenibilidad, manejo de errores, lógica incorrecta y oportunidades de refactoring. Se
+específico y muestra como corregir cada problema encontrado.
+
+### Problemas identificados y resultado
+
+**1. Violación de arquitectura — cross-domain coupling (Alta)**
+`ProductsService` importaba `InventoryProductDetailDto` (dominio `inventory`) y construía la respuesta directamente. El `InventoryController` inyectaba `ProductsService` en lugar de un servicio de su propio dominio.
+
+→ Se creó `inventory/inventory.service.ts` como módulo de orquestación puro (sin entidad). Ahora `InventoryController` inyecta `InventoryService`, que a su vez delega en `ProductsService` para datos y realiza el mapeo al DTO.
+
+**2. `InventoryAlertItem` definida en el dominio equivocado (Alta)**
+El tipo vivía en `inventory/types/inventory-alert.item.ts` pero solo lo consumía el factory de products. Acoplamiento invertido.
+
+→ Tipo movido al `product.factory.ts`. Archivo `inventory/types/inventory-alert.item.ts` eliminado.
+
+**3. `low_stock` duplicado en 3 lugares (Media)**
+La regla `stock_actual <= stock_minimo` estaba hardcodeada en `products.service.ts`, en `findAllInventoryPositions` y en `findAlertsWithStock` del factory.
+
+→ Consolidada en `inventory.service.ts::getProductDetail`. Las instancias del factory se mantienen locales (la del WHERE clause SQL es inherentemente diferente).
+
+**4. `patchProduct` con 3 round-trips a la BD (Media)**
+Flujo original: `findOne` → `save` → `findOneWithStock`. Tres queries para un PATCH.
+
+→ Reemplazado por `repository.update()` + verificación de `affected === 0` para el 404. Reducido a 2 queries.
+
+**5. Dead code en `parseAggregateNumber` (Baja)**
+`typeof value === 'string' ? Number(value) : Number(value)` — ambas ramas idénticas.
+
+→ Simplificado a `Number(value)`.
+
+**6. Comentario con referencia a task ID (Baja)**
+Comentario `T-013` en `products.service.ts` violaba la regla del proyecto ("no referencias a tareas en el código").
+
+→ Eliminado junto con el método que lo contenía.
+
+### Archivos modificados
+- `products/services/product/product.factory.ts` — fixes #2 #4 #5
+- `products/products.service.ts` — fixes #1 #2 #6
+- `products/products.service.spec.ts` — tests actualizados para `patchProduct` (mock `update` en lugar de `findOne`+`save`); bloque `findInventoryProductDetail` eliminado
+- `inventory/inventory.service.ts` — **creado** (fix #1 #3)
+- `inventory/inventory.module.ts` — registra `InventoryService`
+- `inventory/inventory.controller.ts` — inyecta `InventoryService`
+- `inventory/types/inventory-alert.item.ts` — **eliminado** (fix #2)

@@ -44,6 +44,7 @@ describe('ProductsService', () => {
       }),
     ),
     findOne: jest.fn(),
+    update: jest.fn(),
     createQueryBuilder: jest.fn(() => mockProductListQb),
   };
 
@@ -277,57 +278,6 @@ describe('ProductsService', () => {
     });
   });
 
-  describe('findInventoryProductDetail (T-013)', () => {
-    const productId = '550e8400-e29b-41d4-a716-446655440099';
-
-    it('returns catalog subset with stock_actual and low_stock (M8 inclusive)', async () => {
-      const entity = {
-        id: productId,
-        name: 'Detail',
-        description: 'Full desc',
-        unit: 'LITROS',
-        category: 'Cat',
-        stock_minimo: 10,
-        status: 'ACTIVO',
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      } as Product;
-
-      mockProductListQb.getRawAndEntities.mockResolvedValue({
-        entities: [entity],
-        raw: [{ stock_actual: '10' }],
-      });
-
-      const row = await service.findInventoryProductDetail(productId);
-
-      expect(mockProductListQb.where).toHaveBeenCalledWith('product.id = :id', {
-        id: productId,
-      });
-      expect(row).toEqual({
-        id: productId,
-        name: 'Detail',
-        description: 'Full desc',
-        unit: 'LITROS',
-        category: 'Cat',
-        status: 'ACTIVO',
-        stock_minimo: 10,
-        stock_actual: 10,
-        low_stock: true,
-      });
-    });
-
-    it('throws NotFoundException when product does not exist', async () => {
-      mockProductListQb.getRawAndEntities.mockResolvedValue({
-        entities: [],
-        raw: [],
-      });
-
-      await expect(
-        service.findInventoryProductDetail(productId),
-      ).rejects.toThrow(NotFoundException);
-    });
-  });
-
   describe('update / patch (T-009)', () => {
     const id = '550e8400-e29b-41d4-a716-446655440077';
 
@@ -344,8 +294,7 @@ describe('ProductsService', () => {
     } as Product;
 
     beforeEach(() => {
-      mockRepo.findOne.mockResolvedValue({ ...baseProduct });
-      mockRepo.save.mockImplementation((p: Product) => Promise.resolve(p));
+      mockRepo.update.mockResolvedValue({ affected: 1 });
     });
 
     it('applies partial fields and returns product with stock_actual', async () => {
@@ -356,22 +305,17 @@ describe('ProductsService', () => {
 
       const result = await service.update(id, { name: 'New' });
 
-      expect(mockRepo.findOne).toHaveBeenCalledWith({ where: { id } });
-      expect(mockRepo.save).toHaveBeenCalled();
-      const savedArg = mockRepo.save.mock.calls[0][0];
-      expect(savedArg.name).toBe('New');
-      expect(savedArg.unit).toBe('KG');
+      expect(mockRepo.update).toHaveBeenCalledWith({ id }, { name: 'New' });
       expect(result.stock_actual).toBe(3);
       expect(result.name).toBe('New');
     });
 
     it('throws NotFoundException when product does not exist', async () => {
-      mockRepo.findOne.mockResolvedValue(null);
+      mockRepo.update.mockResolvedValue({ affected: 0 });
 
       await expect(service.update(id, { name: 'X' })).rejects.toThrow(
         NotFoundException,
       );
-      expect(mockRepo.save).not.toHaveBeenCalled();
     });
   });
 

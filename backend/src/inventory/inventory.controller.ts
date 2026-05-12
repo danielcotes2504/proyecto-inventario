@@ -7,15 +7,15 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 
-import { ProductsService } from '../products/products.service';
 import { InventoryAlertDto } from './dto/inventory-alert.dto';
 import { InventoryPositionDto } from './dto/inventory-position.dto';
 import { InventoryProductDetailDto } from './dto/inventory-product-detail.dto';
+import { InventoryService } from './inventory.service';
 
 @ApiTags('inventory')
 @Controller('inventory')
 export class InventoryController {
-  constructor(private readonly productsService: ProductsService) {}
+  constructor(private readonly inventoryService: InventoryService) {}
 
   @Get()
   @ApiOperation({
@@ -29,7 +29,7 @@ export class InventoryController {
     isArray: true,
   })
   positions(): Promise<InventoryPositionDto[]> {
-    return this.productsService.findInventoryPositions();
+    return this.inventoryService.getPositions();
   }
 
   @Get('alerts/low-stock')
@@ -45,7 +45,7 @@ export class InventoryController {
     isArray: true,
   })
   alerts(): Promise<InventoryAlertDto[]> {
-    return this.productsService.findInventoryAlerts();
+    return this.inventoryService.getAlerts();
   }
 
   /** Declared after static paths so `alerts` is never parsed as a UUID. */
@@ -80,6 +80,6 @@ export class InventoryController {
     @Param('productId', new ParseUUIDPipe({ version: '4' }))
     productId: string,
   ): Promise<InventoryProductDetailDto> {
-    return this.productsService.findInventoryProductDetail(productId);
+    return this.inventoryService.getProductDetail(productId);
   }
 }
