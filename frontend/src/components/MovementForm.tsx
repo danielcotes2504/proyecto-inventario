@@ -25,6 +25,7 @@ import {
   MOVEMENT_REASON_LITERALS,
   MOVEMENT_TYPE_LABELS,
   MOVEMENT_TYPE_LITERALS,
+  PRODUCT_UNIT_LABELS,
 } from '#/services/api';
 
 import type { MovementFormApi } from '#/hooks/use-movement-form';
@@ -35,7 +36,7 @@ function firstFieldError(errors: readonly unknown[]): string | undefined {
     return first;
   }
   if (first !== null && typeof first === 'object' && 'message' in first) {
-    const msg = Reflect.get(first, 'message');
+    const msg = (first as { message: unknown }).message;
     if (typeof msg === 'string') {
       return msg;
     }
@@ -149,14 +150,14 @@ export function MovementFormFields({
                     if (type !== 'OUT' || productId.length === 0) {
                       return null;
                     }
-                    const stock = products.find((p) => p.id === productId)
-                      ?.stock_actual;
-                    if (stock === undefined) {
+                    const product = products.find((p) => p.id === productId);
+                    if (product === undefined) {
                       return null;
                     }
                     return (
                       <FieldDescription>
-                        Disponible ahora: {stock} unidades
+                        Disponible ahora: {product.stock_actual}{' '}
+                        {PRODUCT_UNIT_LABELS[product.unit]}
                       </FieldDescription>
                     );
                   }}

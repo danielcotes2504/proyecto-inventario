@@ -113,3 +113,40 @@ The project MUST adhere to this organization without exceptions:
 ### Paso B — Alinear el código con las reglas
 
 Por favor, con base a las nuevas cursor rules añadidas en el frontend, actualiza la estructura del @frontend/ @.cursor/rules/frontend.mdc
+
+
+---
+
+## Code Review · `MovementForm.tsx`
+
+### Prompt
+
+Actúa como un senior developer revisando este código @../frontend/src/components/MovementForm.tsx. Identifica problemas de mantenibilidad, manejo de errores, lógica incorrecta y oportunidades de refactoring. Se específico y muestra como corregir cada problema encontrado.
+
+### Problemas identificados y resultado
+
+**1. Unidad hardcodeada "unidades" para todos los productos (Media — lógica incorrecta)**
+El hint de stock disponible mostraba siempre "X unidades" independientemente de si el producto era KG o LITROS.
+
+→ Añadido `PRODUCT_UNIT_LABELS` en `api.ts`. El componente ahora busca el `product` completo (no solo `stock_actual`) y usa `PRODUCT_UNIT_LABELS[product.unit]` para mostrar la unidad correcta.
+
+**2. `Reflect.get` innecesario en `firstFieldError` (Baja)**
+`'message' in first` ya estrecha el tipo suficiente. `Reflect.get` añade indirección sin beneficio.
+
+→ Reemplazado por `(first as { message: unknown }).message`.
+
+**3. `safeParse` ejecutado dos veces en submit (Baja)**
+`validators.onSubmit` y el cuerpo de `onSubmit` llamaban a `schemaRef.current.safeParse` por separado. TanStack Form bloquea `onSubmit` cuando el validator falla, haciendo la segunda llamada redundante.
+
+→ Eliminado `validators.onSubmit`. El `onSubmit` hace un único `safeParse`: si falla, retorna los errores de validación al form; si pasa, llama a la API con el tipo seguro de `parsed.data`.
+
+**4. Mensajes de error HTTP en inglés para 422 y 409 (Media)**
+Tras el cambio de `BadRequestException` → `UnprocessableEntityException` en el backend, el mensaje "Insufficient stock for this operation." llegaba en inglés al usuario.
+
+→ Añadido `STATUS_MESSAGES` en `api-error-message.ts` con mensajes localizados para 422 y 409. Se evalúa antes del parsing del body.
+
+### Archivos modificados
+- `services/api.ts` — añadido `PRODUCT_UNIT_LABELS`
+- `components/MovementForm.tsx` — fix #1 (unidad dinámica) + fix #2 (`Reflect.get`)
+- `hooks/use-movement-form.ts` — fix #3 (un solo `safeParse` en submit)
+- `lib/api-error-message.ts` — fix #4 (mensajes localizados para 422/409)

@@ -22,6 +22,15 @@ export const PRODUCT_STATUS = {
   INACTIVO: 'INACTIVO',
 } as const;
 
+export const PRODUCT_UNIT_LABELS: Record<
+  (typeof PRODUCT_UNIT)[keyof typeof PRODUCT_UNIT],
+  string
+> = {
+  UNIDADES: 'unidades',
+  KG: 'kg',
+  LITROS: 'litros',
+};
+
 const unitSchema = z.enum([
   PRODUCT_UNIT.UNIDADES,
   PRODUCT_UNIT.KG,

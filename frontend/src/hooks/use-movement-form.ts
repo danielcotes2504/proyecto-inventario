@@ -63,13 +63,11 @@ export function useMovementForm(
     validators: {
       onChange: ({ value }) =>
         validationErrorsFromZodSafeParse(schemaRef.current.safeParse(value)),
-      onSubmit: ({ value }) =>
-        validationErrorsFromZodSafeParse(schemaRef.current.safeParse(value)),
     },
     onSubmit: async ({ value }) => {
       const parsed = schemaRef.current.safeParse(value);
       if (!parsed.success) {
-        return;
+        return validationErrorsFromZodSafeParse(parsed);
       }
       try {
         await mutation.mutateAsync(mapRegisterMovementToApiBody(parsed.data));
