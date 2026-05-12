@@ -36,7 +36,7 @@ function firstFieldError(errors: readonly unknown[]): string | undefined {
     return first;
   }
   if (first !== null && typeof first === 'object' && 'message' in first) {
-    const msg = (first as { message: unknown }).message;
+    const msg = (first as Record<string, unknown>).message;
     if (typeof msg === 'string') {
       return msg;
     }

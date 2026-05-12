@@ -150,3 +150,31 @@ Tras el cambio de `BadRequestException` → `UnprocessableEntityException` en el
 - `components/MovementForm.tsx` — fix #1 (unidad dinámica) + fix #2 (`Reflect.get`)
 - `hooks/use-movement-form.ts` — fix #3 (un solo `safeParse` en submit)
 - `lib/api-error-message.ts` — fix #4 (mensajes localizados para 422/409)
+
+
+---
+
+## Code Review · `ProductCard.tsx`
+
+### Prompt
+
+Actúa como un senior developer revisando este código @../frontend/src/components/ProductCard.tsx. Identifica problemas de mantenibilidad, manejo de errores, lógica incorrecta y oportunidades de refactoring. Se específico y muestra como corregir cada problema encontrado.
+
+### Problemas identificados y resultado
+
+**1. `product.unit` renderiza el valor raw del objeto (Media — lógica incorrecta)**
+La columna "Unidad" mostraba "UNIDADES", "KG" o "LITROS" (las claves internas) en lugar de etiquetas legibles.
+
+→ Reemplazado `{product.unit}` por `{PRODUCT_UNIT_LABELS[product.unit]}`, usando el mapa añadido en el review anterior de `MovementForm`.
+
+**2. `aria-label` de `StockBadge` con "unidades" hardcodeado (Baja — accesibilidad)**
+`StockBadge` solo recibía números, sin contexto de unidad. El lector de pantalla anunciaba "quedan 10 unidades" aunque el producto fuera KG o LITROS.
+
+→ Añadida prop opcional `unit?: string` (default `'unidades'`) a `StockBadge`. `ProductCard` pasa `unit={PRODUCT_UNIT_LABELS[product.unit]}` para que el `aria-label` sea preciso.
+
+**3. Nombre `ProductCard` no describe lo que renderiza (Baja — naming)**
+El componente renderiza un `<TableRow>`, no una tarjeta. El nombre correcto sería `ProductRow`. Sin embargo el mapa de arquitectura del proyecto fija el nombre `ProductCard.tsx`, por lo que no se modificó.
+
+### Archivos modificados
+- `components/ProductCard.tsx` — fix #1 (unidad legible) + pasa `unit` a `StockBadge`
+- `components/StockBadge.tsx` — fix #2 (prop `unit` en `aria-label`)
