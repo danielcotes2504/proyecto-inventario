@@ -3,6 +3,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { getDataSourceToken, getRepositoryToken } from '@nestjs/typeorm';
 import * as fc from 'fast-check';
 
+import { Movement } from '../movements/entities/movement.entity';
 import { Product } from './entities/product.entity';
 import { createProductBodySchema } from './schemas/create-product.schema';
 import { updateProductBodySchema } from './schemas/update-product.schema';
@@ -275,7 +276,9 @@ describe('ProductsService', () => {
         raw: [],
       });
 
-      await expect(service.findOne(id)).rejects.toThrow(NotFoundException);
+      await expect(service.findOne(id)).rejects.toMatchObject({
+        message: `Product with id "${id}" not found`,
+      });
     });
   });
 
@@ -314,9 +317,9 @@ describe('ProductsService', () => {
     it('throws NotFoundException when product does not exist', async () => {
       mockRepo.update.mockResolvedValue({ affected: 0 });
 
-      await expect(service.update(id, { name: 'X' })).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(service.update(id, { name: 'X' })).rejects.toMatchObject({
+        message: `Product with id "${id}" not found`,
+      });
     });
   });
 
@@ -353,6 +356,55 @@ describe('ProductsService', () => {
         },
       ]);
     });
+
+    it('M8: product with stock_actual === stock_minimo is included in alerts', async () => {
+      const boundaryProduct = {
+        id: '550e8400-e29b-41d4-a716-446655440088',
+        name: 'Boundary',
+        description: 'd',
+        unit: 'KG',
+        category: 'c',
+        stock_minimo: 7,
+        status: 'ACTIVO',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      } as Product;
+
+      mockProductListQb.getRawAndEntities.mockResolvedValue({
+        entities: [boundaryProduct],
+        raw: [{ stock_actual: '7' }],
+      });
+
+      const rows = await service.findInventoryAlerts();
+
+      expect(rows).toHaveLength(1);
+      expect(rows[0].stock_actual).toBe(7);
+      expect(rows[0].stock_minimo).toBe(7);
+    });
+
+    it('M8: returns exact stock_actual value from aggregate (kills arithmetic mutations)', async () => {
+      const p = {
+        id: '550e8400-e29b-41d4-a716-446655440077',
+        name: 'P',
+        description: 'd',
+        unit: 'KG',
+        category: 'c',
+        stock_minimo: 20,
+        status: 'ACTIVO',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      } as Product;
+
+      mockProductListQb.getRawAndEntities.mockResolvedValue({
+        entities: [p],
+        raw: [{ stock_actual: '3' }],
+      });
+
+      const rows = await service.findInventoryAlerts();
+
+      expect(rows[0].stock_actual).toBe(3);
+      expect(rows[0].stock_minimo).toBe(20);
+    });
   });
 
   describe('delete (T-002)', () => {
@@ -369,9 +421,14 @@ describe('ProductsService', () => {
       await service.delete(id);
 
       expect(mockDataSource.transaction).toHaveBeenCalled();
-      expect(mockManager.findOne).toHaveBeenCalled();
-      expect(mockManager.count).toHaveBeenCalled();
-      expect(mockManager.delete).toHaveBeenCalled();
+      expect(mockManager.findOne).toHaveBeenCalledWith(Product, {
+        where: { id },
+        lock: { mode: 'pessimistic_write' },
+      });
+      expect(mockManager.count).toHaveBeenCalledWith(Movement, {
+        where: { productId: id },
+      });
+      expect(mockManager.delete).toHaveBeenCalledWith(Product, { id });
     });
 
     it('throws NotFoundException when product does not exist', async () => {

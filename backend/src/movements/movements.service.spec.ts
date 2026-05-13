@@ -13,6 +13,7 @@ import {
   PRODUCT_UNIT,
 } from '../common/domain/inventory-domain';
 import { Movement } from './entities/movement.entity';
+import { Product } from '../products/entities/product.entity';
 import { createMovementBodySchema } from './schemas/create-movement.schema';
 import { listMovementsQuerySchema } from './schemas/list-movements-query.schema';
 import { MovementsService } from './movements.service';
@@ -135,6 +136,115 @@ describe('MovementsService', () => {
     expect(mockManager.save).toHaveBeenCalled();
   });
 
+  // ─── Mutant killers: M3 / M4 / M5 / M6 ───────────────────────────────────
+
+  it('M4/M5: persists exact type and quantity for IN movement', async () => {
+    mockManager.findOne.mockResolvedValue({
+      id: productId,
+      status: PRODUCT_STATUS.ACTIVO,
+    });
+    let captured: Record<string, unknown> = {};
+    mockManager.create.mockImplementation((_: unknown, data: object) => {
+      captured = data as Record<string, unknown>;
+      return captured;
+    });
+    mockManager.save.mockImplementation((row: object) =>
+      Promise.resolve({ ...row, id: 'mov-m4', createdAt: new Date() }),
+    );
+
+    const result = await service.register({
+      type: MOVEMENT_TYPE.IN,
+      quantity: 77,
+      productId,
+      reason: MOVEMENT_REASON.COMPRA,
+      date: new Date('2026-04-01'),
+    });
+
+    expect(mockManager.findOne).toHaveBeenCalledWith(Product, {
+      where: { id: productId },
+      lock: { mode: 'pessimistic_write' },
+    });
+    expect(captured.type).toBe(MOVEMENT_TYPE.IN);
+    expect(captured.quantity).toBe(77);
+    expect(captured.productId).toBe(productId);
+    expect(result.quantity).toBe(77);
+    expect(result.type).toBe(MOVEMENT_TYPE.IN);
+  });
+
+  it('M4/M5: persists exact type and quantity for OUT movement', async () => {
+    mockManager.findOne.mockResolvedValue({
+      id: productId,
+      status: PRODUCT_STATUS.ACTIVO,
+    });
+    stockQueryBuilder.getRawOne.mockResolvedValue({ stock: '50' });
+    let captured: Record<string, unknown> = {};
+    mockManager.create.mockImplementation((_: unknown, data: object) => {
+      captured = data as Record<string, unknown>;
+      return captured;
+    });
+    mockManager.save.mockImplementation((row: object) =>
+      Promise.resolve({ ...row, id: 'mov-m5', createdAt: new Date() }),
+    );
+
+    const result = await service.register({
+      type: MOVEMENT_TYPE.OUT,
+      quantity: 30,
+      productId,
+      reason: MOVEMENT_REASON.VENTA,
+      date: new Date('2026-04-01'),
+    });
+
+    expect(captured.type).toBe(MOVEMENT_TYPE.OUT);
+    expect(captured.quantity).toBe(30);
+    expect(captured.productId).toBe(productId);
+    expect(result.quantity).toBe(30);
+    expect(result.type).toBe(MOVEMENT_TYPE.OUT);
+  });
+
+  it('M3: OUT with quantity exactly equal to stock succeeds', async () => {
+    mockManager.findOne.mockResolvedValue({
+      id: productId,
+      status: PRODUCT_STATUS.ACTIVO,
+    });
+    stockQueryBuilder.getRawOne.mockResolvedValue({ stock: '15' });
+    mockManager.create.mockImplementation((_: unknown, data: object) => data);
+    mockManager.save.mockImplementation((row: object) =>
+      Promise.resolve({ ...row, id: 'mov-m3', createdAt: new Date() }),
+    );
+
+    await expect(
+      service.register({
+        type: MOVEMENT_TYPE.OUT,
+        quantity: 15,
+        productId,
+        reason: MOVEMENT_REASON.VENTA,
+        date: new Date('2026-04-01'),
+      }),
+    ).resolves.toBeDefined();
+
+    expect(mockManager.save).toHaveBeenCalled();
+  });
+
+  it('M3: OUT with quantity one above stock throws UnprocessableEntityException', async () => {
+    mockManager.findOne.mockResolvedValue({
+      id: productId,
+      status: PRODUCT_STATUS.ACTIVO,
+    });
+    stockQueryBuilder.getRawOne.mockResolvedValue({ stock: '15' });
+
+    await expect(
+      service.register({
+        type: MOVEMENT_TYPE.OUT,
+        quantity: 16,
+        productId,
+        reason: MOVEMENT_REASON.VENTA,
+        date: new Date('2026-04-01'),
+      }),
+    ).rejects.toBeInstanceOf(UnprocessableEntityException);
+
+    expect(mockManager.save).not.toHaveBeenCalled();
+  });
+
   it('throws UnprocessableEntityException when OUT exceeds stock', async () => {
     mockManager.findOne.mockResolvedValue({ id: productId });
     stockQueryBuilder.getRawOne.mockResolvedValue({ stock: '3' });
@@ -171,9 +281,30 @@ describe('MovementsService', () => {
         reason: MOVEMENT_REASON.COMPRA,
         date: new Date('2026-04-01'),
       }),
-    ).rejects.toThrow(NotFoundException);
+    ).rejects.toMatchObject({
+      message: `Product with id "${productId}" not found`,
+    });
 
     expect(mockManager.save).not.toHaveBeenCalled();
+  });
+
+  it('INACTIVO message: throws with exact error text for inactive product', async () => {
+    mockManager.findOne.mockResolvedValue({
+      id: productId,
+      status: PRODUCT_STATUS.INACTIVO,
+    });
+
+    await expect(
+      service.register({
+        type: MOVEMENT_TYPE.IN,
+        quantity: 1,
+        productId,
+        reason: MOVEMENT_REASON.COMPRA,
+        date: new Date('2026-04-01'),
+      }),
+    ).rejects.toMatchObject({
+      message: 'Cannot register movement for an inactive product.',
+    });
   });
 
   describe('findOne (T-011)', () => {
@@ -233,6 +364,20 @@ describe('MovementsService', () => {
         relations: ['product'],
       });
     });
+
+    it('throws NotFoundException when movement has no associated product', async () => {
+      mockMovementRepo.findOne.mockResolvedValue({
+        id: movementId,
+        type: MOVEMENT_TYPE.IN,
+        quantity: 1,
+        product: null,
+        productId,
+      });
+
+      await expect(service.findOne(movementId)).rejects.toThrow(
+        NotFoundException,
+      );
+    });
   });
 
   describe('list (T-010)', () => {
@@ -251,6 +396,11 @@ describe('MovementsService', () => {
         'movement.createdAt',
         'DESC',
       );
+      expect(listQueryBuilder.addOrderBy).toHaveBeenCalledWith(
+        'movement.id',
+        'DESC',
+      );
+      expect(listQueryBuilder.andWhere).not.toHaveBeenCalled();
       expect(listQueryBuilder.skip).toHaveBeenCalledWith(0);
       expect(listQueryBuilder.take).toHaveBeenCalledWith(20);
       expect(result.items).toEqual([]);
@@ -269,6 +419,31 @@ describe('MovementsService', () => {
 
       expect(listQueryBuilder.skip).toHaveBeenCalledWith(10);
       expect(listQueryBuilder.take).toHaveBeenCalledWith(10);
+    });
+
+    it('M6: returns exact items and correct totalPages when results exist', async () => {
+      const items = [
+        { id: 'mov-a', type: MOVEMENT_TYPE.IN, quantity: 10, productId },
+        { id: 'mov-b', type: MOVEMENT_TYPE.OUT, quantity: 3, productId },
+      ];
+      listQueryBuilder.getManyAndCount.mockResolvedValue([items, 2]);
+
+      const result = await service.list({ page: 1, pageSize: 20 });
+
+      expect(result.items).toHaveLength(2);
+      expect(result.items[0].id).toBe('mov-a');
+      expect(result.items[1].id).toBe('mov-b');
+      expect(result.meta.total).toBe(2);
+      expect(result.meta.totalPages).toBe(1);
+    });
+
+    it('M6: totalPages rounds up for partial last page', async () => {
+      listQueryBuilder.getManyAndCount.mockResolvedValue([[], 21]);
+
+      const result = await service.list({ page: 1, pageSize: 20 });
+
+      expect(result.meta.total).toBe(21);
+      expect(result.meta.totalPages).toBe(2);
     });
 
     it('adds filters when provided', async () => {
