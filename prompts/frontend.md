@@ -178,3 +178,41 @@ El componente renderiza un `<TableRow>`, no una tarjeta. El nombre correcto ser�
 ### Archivos modificados
 - `components/ProductCard.tsx` — fix #1 (unidad legible) + pasa `unit` a `StockBadge`
 - `components/StockBadge.tsx` — fix #2 (prop `unit` en `aria-label`)
+
+
+---
+
+## E2E Testing · Playwright Suite (Day 10 — Final Phase)
+
+# Role: Senior QA Engineer & Playwright Expert
+# Task: E2E Testing Implementation (Day 10 - Final Phase)
+
+Please implement the End-to-End (E2E) testing suite for the frontend using Playwright, following the "Flujo E2E mínimo esperado" and the project architecture.
+
+## 1. Setup Phase
+- Install Playwright in the frontend directory: 'npm init playwright@latest'.
+- Configure Playwright to point to the development server (default: http://localhost:5173).
+- Ensure test files are located in: 'src/e2e/'.
+
+## 2. Test Suite Implementation (src/e2e/inventory.spec.ts)
+Implement the following flows in one or more spec files:
+
+### Flow A: Product List & Alerts
+- Navigate to the product list.
+- Verify that products are loaded (check for visibility of names/prices).
+- **M8 Rule Check**: Identify a product where stock <= min_stock and verify that the 'StockBadge' or alert badge is visible and correctly styled (e.g., red/alert state).
+
+### Flow B: Movement Management (The Core Flow)
+- Navigate to the movement form.
+- **Stock Entry**: Select a product, register an 'IN' movement of 10 units. Verify that after submission, the user is redirected or sees an update where the stock increased.
+- **Valid Stock Exit**: Register an 'OUT' movement within available limits. Verify the stock decreases correctly in the list.
+- **Invalid Stock Exit (Safety Check)**: Attempt to register an 'OUT' movement that exceeds current stock. Verify that the system stays on the page, the form is NOT submitted, and a clear error message from the backend is displayed to the user.
+
+## 3. Technical Constraints
+- Use 'data-testid' selectors if possible, or semantic selectors (role, text).
+- Ensure the tests wait for network idleness or specific elements to avoid flakiness.
+- Architecture: Follow the file map:
+  - src/e2e/product-list.spec.ts
+  - src/e2e/movement-form.spec.ts
+
+**Please start by installing Playwright and then generate the test scripts.**
