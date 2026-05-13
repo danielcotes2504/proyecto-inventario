@@ -495,3 +495,35 @@ La causa raíz era que el test referenciaba `UnprocessableEntityException` antes
 
 ### Archivos modificados
 - Ninguno — la corrección ya estaba aplicada desde el code review de `movements.service.ts`.
+
+
+---
+
+## Stryker · Mutation Testing (Day 9)
+
+# Role: Senior QA Automation Engineer
+# Task: Stryker Configuration & Mutation Testing Defense
+
+I am implementing Day 9 of my project: Mutation Testing. I need you to configure Stryker and prepare the test suite to ensure no dangerous mutants survive, especially those defined in my business logic requirements.
+
+## 1. Setup Phase
+- Install: @stryker-mutator/core, @stryker-mutator/jest-runner, @stryker-mutator/typescript-checker.
+- Configure: Create a 'stryker.config.json' optimized for NestJS. 
+  - Mutate only 'src/**/*.service.ts'.
+  - Exclude tests, main.ts, and modules.
+  - Use 'jest' as the testRunner and 'typescript' as the checker.
+
+## 2. Strategic Test Implementation (Based on Risk Matrix)
+I need you to review 'src/products/products.service.ts' and 'src/movements/movements.service.ts' to ensure we have "Mutant Killers" for these specific cases:
+
+- M1 & M2 (Status/Min Stock): Ensure tests check boundaries like stockMinimo = 0 and blocking deactivation if movements > 0.
+- M3 (Equality Boundary): Ensure a 'OUT' movement is allowed when quantity EXACTLY equals current stock.
+- M4 & M5 (Data Integrity): This is CRITICAL. Write tests that verify the EXACT final stock value after IN/OUT movements to catch '+' changed to '-' or 'type ===' changed to '!=='.
+- M6 (Filtering): Ensure filtered results are checked for length and content, not just absence of error.
+- M8 (M8 Rule): Create a test where stock_actual === stock_minimo and assert it MUST be included in alerts.
+
+## 3. Execution Rule
+- Run 'npx stryker run' after implementing the tests.
+- If any mutant from the IDs M1 through M8 survives, analyze the 'reports/mutation/index.html', explain why it survived, and refactor the tests until the Mutation Score for these lines is 100%.
+
+**Please start by installing the dependencies and creating the config file.**
