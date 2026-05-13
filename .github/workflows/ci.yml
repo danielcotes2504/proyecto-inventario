@@ -1,0 +1,39 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  backend-qa:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Install Dependencies
+        run: cd backend && npm ci
+
+      - name: Unit Tests
+        run: cd backend && npm test
+
+      - name: Mutation Testing (Stryker)
+        # Corremos Stryker y fallamos si el score es bajo (opcional)
+        run: cd backend && npx stryker run
+
+  frontend-qa:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Dependencies
+        run: cd frontend && npm ci
+      
+      - name: Build Check
+        run: cd frontend && npm run build

@@ -4,36 +4,9 @@ import type { CorsOptions } from '@nestjs/common/interfaces/external/cors-option
 
 import { AppModule } from './app.module';
 
-/** Vite / TanStack Start dev servers commonly use these hosts and ports. */
-const DEFAULT_DEV_ORIGINS = [
-  'http://localhost:5173',
-  'http://127.0.0.1:5173',
-  'http://localhost:5174',
-  'http://127.0.0.1:5174',
-  'http://localhost:3000',
-  'http://127.0.0.1:3000',
-] as const;
-
-/**
- * `CORS_ORIGIN`: comma-separated list (e.g. `http://localhost:5174,http://localhost:3000`).
- * Use `*` to reflect any request origin (dev only; do not use with cookie credentials).
- */
 function buildCorsOptions(): CorsOptions {
-  const raw = process.env.CORS_ORIGIN?.trim();
-  let origin: CorsOptions['origin'];
-  if (raw === '*') {
-    origin = true;
-  } else if (raw && raw.length > 0) {
-    origin = raw
-      .split(',')
-      .map((s) => s.trim())
-      .filter(Boolean);
-  } else {
-    origin = [...DEFAULT_DEV_ORIGINS];
-  }
-
   return {
-    origin,
+    origin: process.env.FRONTEND_URL || 'http://localhost:5173',
     methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
     exposedHeaders: [],

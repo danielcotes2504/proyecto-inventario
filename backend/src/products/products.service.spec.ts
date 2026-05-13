@@ -577,7 +577,10 @@ describe('PBT — P4: stock_minimo must be non-negative', () => {
   });
 
   it('accepts stock_minimo = 0 (zero is a valid threshold)', () => {
-    const r = createProductBodySchema.safeParse({ ...validBase, stock_minimo: 0 });
+    const r = createProductBodySchema.safeParse({
+      ...validBase,
+      stock_minimo: 0,
+    });
     expect(r.success).toBe(true);
   });
 

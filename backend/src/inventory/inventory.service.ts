@@ -19,7 +19,9 @@ export class InventoryService {
     return this.productsService.findInventoryAlerts();
   }
 
-  async getProductDetail(productId: string): Promise<InventoryProductDetailDto> {
+  async getProductDetail(
+    productId: string,
+  ): Promise<InventoryProductDetailDto> {
     const p = await this.productsService.findOne(productId);
     return {
       id: p.id,
