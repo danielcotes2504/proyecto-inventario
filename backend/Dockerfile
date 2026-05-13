@@ -20,4 +20,6 @@ COPY --from=builder /app/dist ./dist
 # Render injects PORT at runtime; fallback keeps local docker run working.
 EXPOSE 3000
 
-CMD ["node", "dist/main"]
+# Run pending migrations then start the server.
+# Uses the compiled JS data-source (dist/) — not the ts-node variant from package.json scripts.
+CMD ["sh", "-c", "./node_modules/.bin/typeorm migration:run -d dist/database/data-source.js && node dist/main"]
