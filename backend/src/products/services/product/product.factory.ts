@@ -36,9 +36,6 @@ export type InventoryAlertItem = {
 function parseAggregateNumber(
   value: string | number | null | undefined,
 ): number {
-  if (value == null) {
-    return 0;
-  }
   const n = Number(value);
   return Number.isFinite(n) ? n : 0;
 }

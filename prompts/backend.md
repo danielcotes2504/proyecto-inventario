@@ -527,3 +527,74 @@ I need you to review 'src/products/products.service.ts' and 'src/movements/movem
 - If any mutant from the IDs M1 through M8 survives, analyze the 'reports/mutation/index.html', explain why it survived, and refactor the tests until the Mutation Score for these lines is 100%.
 
 **Please start by installing the dependencies and creating the config file.**
+
+
+---
+
+## Stryker · Survivor Analysis & Mutant Killer Tests (Day 9 — Phase 2)
+
+### Prompt
+
+```
+# Role: Senior QA Engineer & Mutation Testing Specialist
+# Task: Survive Mutant Analysis and Test Refinement (Day 9)
+
+I have executed Stryker and I have several surviving mutants that are bypassing my current test suite (Unit & PBT). 
+
+## 1. Context (The Survivors)
+Here is the mutation report:
+@backend/reports/mutation/mutation.html 
+
+## 2. Analysis Instructions
+For each surviving mutant, please provide:
+- **Technical Explanation**: What did Stryker change (e.g., changed '+' to '-' or '<=' to '<')?
+- **Root Cause Analysis**: Why did my current tests (including the Property-Based ones) fail to detect this change? Is it a lack of boundary testing or a missing assertion on the exact value?
+- **Risk Assessment**: Referring to the project's risk matrix (M1-M8), how critical is this survivor? (e.g., "This is a dangerous M5 mutant: stock corruption without error").
+
+## 3. Action Plan (The Killer Tests)
+Provide the exact code to "kill" these mutants:
+- Write a specific Jest test case for each survivor.
+- Focus on **Boundary Value Analysis** (e.g., if it's an M8 survivor, test stock === stock_minimo).
+- Focus on **Exact State Verification** (e.g., if it's an M4/M5 survivor, verify that stock_actual is exactly the expected number, not just 'defined').
+
+## 4. Verification
+After providing the tests, explain how these new assertions specifically address the mutation to ensure that if the code is changed again, the test will fail (Killed status).
+
+**Please analyze the survivors and provide the updated spec files.**
+```
+
+### Survivors identificados y resultado
+
+**36 mutantes sobrevivientes — todos en los factories (no en los `.service.ts` directamente).**
+
+#### Mutantes equivalentes (no son bugs — el código es la fuente del problema)
+
+| IDs | Archivo / Línea | Mutación | Por qué es equivalente |
+|-----|----------------|----------|------------------------|
+| 113, 115 | `product.factory.ts` L39-41 | `value == null → false` / block removido en `parseAggregateNumber` | `Number(null)=0` (finito→ retorna 0) y `Number(undefined)=NaN` (no finito→ retorna 0) — ambas ramas producen el mismo resultado |
+| 70 | `movement.factory.ts` L132 | `total === 0 → false` en el ternario de `totalPages` | `Math.ceil(0 / pageSize) = 0`, así que la guarda era redundante |
+
+**Fix aplicado:** se eliminó la condición muerta en ambos casos:
+- `parseAggregateNumber`: se removió el `if (value == null) return 0`
+- `listMovements`: simplificado de `total === 0 ? 0 : Math.ceil(total / pageSize)` a `Math.ceil(total / pageSize)`
+
+#### Mutantes matables (assertions faltantes en los specs)
+
+| IDs | Archivo / Método | Mutación | Causa raíz |
+|-----|----------------|----------|------------|
+| 14–19 | `movement.factory.ts` `getCurrentStock` L54-62 | SQL string → `''`, params → `{}` | La cadena QB nunca tuvo assertions de argumentos exactos |
+| 33 | `movement.factory.ts` `getMovementById` L79 | Mensaje NotFoundException → `` | Solo se verificaba la clase (`toThrow(NotFoundException)`) |
+| 38 | `movement.factory.ts` `getMovementById` L85 | Mensaje NotFoundException → `` | Ídem |
+| 122–127 | `product.factory.ts` `findAllWithStock` L72-77 | Strings de `leftJoin`/`addSelect`/`orderBy` → `''` | `leftJoin` solo verificado con `.toHaveBeenCalled()`, `addSelect` sin assertion |
+| 134–138 | `product.factory.ts` `findAllInventoryPositions` L105-109 | Ídem para el segundo método | Ídem |
+| 148–153 | `product.factory.ts` `findOneWithStock` L138-144 | Ídem | Ídem |
+| 171–178 | `product.factory.ts` `findAlertsWithStock` L187-195 | Strings de `leftJoin`/`addSelect`/`orderBy` → `''` | Solo `where` estaba verificado |
+| 192 | `product.factory.ts` `deleteProduct` L225 | Mensaje NotFoundException → `` | Solo se verificaba la clase |
+
+**Fix aplicado:** assertions exactas de argumentos en todos los métodos de QueryBuilder y mensajes de excepción exactos vía `toMatchObject({ message: '...' })`.
+
+### Archivos modificados
+- `movements/services/movement/movement.factory.ts` — simplificado `totalPages` (equivalente)
+- `products/services/product/product.factory.ts` — removido null guard en `parseAggregateNumber` (equivalente)
+- `movements/movements.service.spec.ts` — assertions exactas para QB de `getCurrentStock`; mensajes exactos en `findOne` NotFoundException tests; import `NotFoundException` removido (ya no usado)
+- `products/products.service.spec.ts` — assertions `leftJoin`, `addSelect`, `orderBy` exactas en `findAll`, `findInventoryPositions`, `findOne`, `findInventoryAlerts`; mensaje exacto en `deleteProduct` NotFoundException test; import `NotFoundException` removido

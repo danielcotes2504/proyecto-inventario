@@ -1,4 +1,4 @@
-import { ConflictException, NotFoundException } from '@nestjs/common';
+import { ConflictException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { getDataSourceToken, getRepositoryToken } from '@nestjs/typeorm';
 import * as fc from 'fast-check';
@@ -129,6 +129,19 @@ describe('ProductsService', () => {
 
       expect(mockDataSource.createQueryBuilder).toHaveBeenCalled();
       expect(mockRepo.createQueryBuilder).toHaveBeenCalledWith('product');
+      expect(mockProductListQb.leftJoin).toHaveBeenCalledWith(
+        '((aggregated_movements_subquery))',
+        'stock_agg',
+        'stock_agg.product_id = product.id',
+      );
+      expect(mockProductListQb.addSelect).toHaveBeenCalledWith(
+        'COALESCE(stock_agg.balance, 0)',
+        'stock_actual',
+      );
+      expect(mockProductListQb.orderBy).toHaveBeenCalledWith(
+        'product.name',
+        'ASC',
+      );
       expect(rows).toHaveLength(1);
       expect(rows[0].stock_actual).toBe(23);
       expect(rows[0].name).toBe('P');
@@ -207,7 +220,15 @@ describe('ProductsService', () => {
       const rows = await service.findInventoryPositions();
 
       expect(mockRepo.createQueryBuilder).toHaveBeenCalledWith('product');
-      expect(mockProductListQb.leftJoin).toHaveBeenCalled();
+      expect(mockProductListQb.leftJoin).toHaveBeenCalledWith(
+        '((aggregated_movements_subquery))',
+        'stock_agg',
+        'stock_agg.product_id = product.id',
+      );
+      expect(mockProductListQb.addSelect).toHaveBeenCalledWith(
+        'COALESCE(stock_agg.balance, 0)',
+        'stock_actual',
+      );
       expect(mockProductListQb.where).not.toHaveBeenCalled();
       expect(mockProductListQb.orderBy).toHaveBeenCalledWith(
         'product.name',
@@ -262,6 +283,15 @@ describe('ProductsService', () => {
 
       const row = await service.findOne(id);
 
+      expect(mockProductListQb.leftJoin).toHaveBeenCalledWith(
+        '((aggregated_movements_subquery))',
+        'stock_agg',
+        'stock_agg.product_id = product.id',
+      );
+      expect(mockProductListQb.addSelect).toHaveBeenCalledWith(
+        'COALESCE(stock_agg.balance, 0)',
+        'stock_actual',
+      );
       expect(mockProductListQb.where).toHaveBeenCalledWith('product.id = :id', {
         id,
       });
@@ -344,8 +374,21 @@ describe('ProductsService', () => {
 
       const rows = await service.findInventoryAlerts();
 
+      expect(mockProductListQb.leftJoin).toHaveBeenCalledWith(
+        '((aggregated_movements_subquery))',
+        'stock_agg',
+        'stock_agg.product_id = product.id',
+      );
+      expect(mockProductListQb.addSelect).toHaveBeenCalledWith(
+        'COALESCE(stock_agg.balance, 0)',
+        'stock_actual',
+      );
       expect(mockProductListQb.where).toHaveBeenCalledWith(
         'COALESCE(stock_agg.balance, 0) <= product.stock_minimo',
+      );
+      expect(mockProductListQb.orderBy).toHaveBeenCalledWith(
+        'product.name',
+        'ASC',
       );
       expect(rows).toEqual([
         {
@@ -434,7 +477,9 @@ describe('ProductsService', () => {
     it('throws NotFoundException when product does not exist', async () => {
       mockManager.findOne.mockResolvedValue(null);
 
-      await expect(service.delete(id)).rejects.toThrow(NotFoundException);
+      await expect(service.delete(id)).rejects.toMatchObject({
+        message: `Product with id "${id}" not found`,
+      });
       expect(mockManager.count).not.toHaveBeenCalled();
       expect(mockManager.delete).not.toHaveBeenCalled();
     });

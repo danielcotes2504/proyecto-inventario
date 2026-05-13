@@ -129,7 +129,7 @@ export function createMovementService(deps: MovementServiceDeps) {
       qb.skip(skip).take(pageSize);
 
       const [items, total] = await qb.getManyAndCount();
-      const totalPages = total === 0 ? 0 : Math.ceil(total / pageSize);
+      const totalPages = Math.ceil(total / pageSize);
 
       return {
         items,

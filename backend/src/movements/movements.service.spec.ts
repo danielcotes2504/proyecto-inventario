@@ -1,7 +1,4 @@
-import {
-  NotFoundException,
-  UnprocessableEntityException,
-} from '@nestjs/common';
+import { UnprocessableEntityException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { getDataSourceToken, getRepositoryToken } from '@nestjs/typeorm';
 import * as fc from 'fast-check';
@@ -132,6 +129,19 @@ describe('MovementsService', () => {
     });
 
     expect(mockManager.createQueryBuilder).toHaveBeenCalled();
+    expect(stockQueryBuilder.select).toHaveBeenCalledWith(
+      `COALESCE(SUM(CASE WHEN m.type = :inType THEN m.quantity ELSE 0 END), 0) - COALESCE(SUM(CASE WHEN m.type = :outType THEN m.quantity ELSE 0 END), 0)`,
+      'stock',
+    );
+    expect(stockQueryBuilder.from).toHaveBeenCalledWith(Movement, 'm');
+    expect(stockQueryBuilder.where).toHaveBeenCalledWith(
+      'm.product_id = :productId',
+      { productId },
+    );
+    expect(stockQueryBuilder.setParameters).toHaveBeenCalledWith({
+      inType: MOVEMENT_TYPE.IN,
+      outType: MOVEMENT_TYPE.OUT,
+    });
     expect(stockQueryBuilder.getRawOne).toHaveBeenCalled();
     expect(mockManager.save).toHaveBeenCalled();
   });
@@ -356,9 +366,9 @@ describe('MovementsService', () => {
     it('throws NotFoundException when movement does not exist', async () => {
       mockMovementRepo.findOne.mockResolvedValue(null);
 
-      await expect(service.findOne(movementId)).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(service.findOne(movementId)).rejects.toMatchObject({
+        message: `Movement with id "${movementId}" not found`,
+      });
       expect(mockMovementRepo.findOne).toHaveBeenCalledWith({
         where: { id: movementId },
         relations: ['product'],
@@ -374,9 +384,9 @@ describe('MovementsService', () => {
         productId,
       });
 
-      await expect(service.findOne(movementId)).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(service.findOne(movementId)).rejects.toMatchObject({
+        message: `Product for movement "${movementId}" not found`,
+      });
     });
   });
 
